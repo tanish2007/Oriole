@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChoreShare — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Login screen -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-panel">
+      <div class="login-brand">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <h1>ChoreShare</h1>
+        <p>Make shared chores fair — and a little more fun.</p>
+      </div>
+      <button type="button" class="btn btn-primary btn-google" id="btn-google-login">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <div class="login-divider"><span>or</span></div>
+      <form id="login-form" class="login-form">
+        <label>
+          Email
+          <input type="email" name="email" value="alex@umass.edu" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" value="••••••••" required />
+        </label>
+        <button type="submit" class="btn btn-primary">Log in</button>
+      </form>
+      <p class="login-note">Prototype only — no real accounts. Tap any login to enter.</p>
+    </div>
+  </div>
+
+  <!-- App shell -->
+  <div id="app" class="app hidden" aria-hidden="true">
+    <aside class="sidebar" id="sidebar">
+      <button type="button" class="profile-btn" data-view="profile" title="Profile" aria-label="Open profile">
+        <span class="avatar">A</span>
+        <span class="profile-meta">
+          <strong>Alex Rivera</strong>
+          <small>alex@umass.edu</small>
+        </span>
+      </button>
+
+      <nav class="nav" aria-label="Main">
+        <div class="nav-item">
+          <button type="button" class="nav-link" data-view="groups" data-expand="groups-menu">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            Groups
+          </button>
+          <ul class="submenu" id="groups-menu">
+            <li><button type="button" data-action="switch-group" data-group="maple">Maple House</button></li>
+            <li><button type="button" data-action="switch-group" data-group="study">Study Squad</button></li>
+            <li><button type="button" data-action="invite">Invite member</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-item">
+          <button type="button" class="nav-link active" data-view="dashboard" data-expand="chores-menu">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            Chores
+          </button>
+          <ul class="submenu" id="chores-menu">
+            <li><button type="button" data-action="add-chore"><span class="check"></span> Add chore</button></li>
+            <li><button type="button" data-action="remove-chore"><span class="check"></span> Remove chore</button></li>
+            <li><button type="button" data-action="update-rewards"><span class="check"></span> Update rewards</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-item">
+          <button type="button" class="nav-link" data-view="calendar">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </span>
+            Calendar
+          </button>
+        </div>
+
+        <div class="nav-item">
+          <button type="button" class="nav-link" data-view="leaderboard">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 8h2a2 2 0 0 1 0 4h-2M7 8H5a2 2 0 0 0 0 4h2"/></svg>
+            </span>
+            Leaderboard
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-brand">
+        <div class="logo-mark small" aria-hidden="true"></div>
+        <span>ChoreShare</span>
+      </div>
+    </aside>
+
+    <button type="button" class="mobile-toggle" id="mobile-toggle" aria-label="Toggle menu">☰</button>
+
+    <main class="main">
+      <!-- Dashboard -->
+      <section id="view-dashboard" class="view active">
+        <header class="group-info" id="group-info">
+          <div>
+            <p class="eyebrow">Current group</p>
+            <h2>Maple House</h2>
+            <p class="muted">4 members · You are a member</p>
+          </div>
+          <div class="group-chips">
+            <span class="chip">Weekly reset: Sunday</span>
+            <span class="chip accent">Your points: <strong id="your-points">42</strong></span>
+          </div>
+        </header>
+
+        <div class="dashboard-grid">
+          <div class="panel chore-panel">
+            <div class="panel-head">
+              <h3>Chore tracking</h3>
+              <div class="tabs" role="tablist">
+                <button type="button" class="tab active" data-filter="all">All</button>
+                <button type="button" class="tab" data-filter="available">Available</button>
+                <button type="button" class="tab" data-filter="mine">Mine</button>
+                <button type="button" class="tab" data-filter="done">Done</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="chore-table">
+                <thead>
+                  <tr>
+                    <th>Chore</th>
+                    <th>Points</th>
+                    <th>Due</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="chore-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="side-widgets">
+            <div class="panel rewards-panel">
+              <h3>Possible rewards</h3>
+              <ul class="reward-list" id="reward-list"></ul>
+            </div>
+            <div class="panel points-panel">
+              <h3>Points tracker</h3>
+              <ol class="points-list" id="points-mini"></ol>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Calendar -->
+      <section id="view-calendar" class="view">
+        <header class="group-info">
+          <div>
+            <p class="eyebrow">Current group</p>
+            <h2>Maple House</h2>
+            <p class="muted">Chore due dates this month</p>
+          </div>
+        </header>
+        <div class="panel calendar-panel">
+          <div class="calendar-head">
+            <button type="button" class="icon-btn" id="cal-prev" aria-label="Previous month">‹</button>
+            <h3 id="cal-title">October 2026</h3>
+            <button type="button" class="icon-btn" id="cal-next" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <ul class="cal-legend">
+            <li><span class="dot available"></span> Available</li>
+            <li><span class="dot claimed"></span> In progress</li>
+            <li><span class="dot done"></span> Completed</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section id="view-leaderboard" class="view">
+        <header class="group-info">
+          <div>
+            <p class="eyebrow">Maple House</p>
+            <h2>Leaderboard</h2>
+            <p class="muted">Weekly points · resets Sunday</p>
+          </div>
+          <div class="tabs" role="tablist">
+            <button type="button" class="tab active" data-period="week">This week</button>
+            <button type="button" class="tab" data-period="month">This month</button>
+          </div>
+        </header>
+        <div class="panel leaderboard-panel">
+          <ol class="leaderboard" id="leaderboard-list"></ol>
+        </div>
+      </section>
+
+      <!-- Groups -->
+      <section id="view-groups" class="view">
+        <header class="group-info">
+          <div>
+            <p class="eyebrow">Your households</p>
+            <h2>Groups</h2>
+            <p class="muted">You can belong to multiple groups</p>
+          </div>
+          <button type="button" class="btn btn-primary" data-action="create-group">Create group</button>
+        </header>
+        <div class="groups-grid" id="groups-grid"></div>
+      </section>
+
+      <!-- Profile -->
+      <section id="view-profile" class="view">
+        <header class="group-info">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h2>Profile</h2>
+            <p class="muted">Name and email only (per requirements)</p>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btn-logout">Log out</button>
+        </header>
+        <div class="panel profile-panel">
+          <div class="profile-hero">
+            <span class="avatar large">A</span>
+            <div>
+              <h3>Alex Rivera</h3>
+              <p class="muted">alex@umass.edu</p>
+            </div>
+          </div>
+          <dl class="profile-fields">
+            <div><dt>Display name</dt><dd>Alex Rivera</dd></div>
+            <div><dt>Email</dt><dd>alex@umass.edu</dd></div>
+            <div><dt>Sign-in</dt><dd>Google · Credentials</dd></div>
+            <div><dt>Groups</dt><dd>Maple House, Study Squad</dd></div>
+          </dl>
+          <p class="hint">Nice-to-have later: personal photo upload.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-backdrop hidden" id="modal-backdrop"></div>
+  <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title">Title</h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="modal-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
