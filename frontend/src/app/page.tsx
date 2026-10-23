@@ -1,46 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Fraunces, Outfit } from "next/font/google";
+import {
+  CURRENT_GROUP,
+  CURRENT_USER,
+  type Chore,
+  type CreateChoreInput,
+  type Member,
+  type Reward,
+  type Status,
+  claimChore,
+  completeChore,
+  createChore,
+  deleteChore,
+  listChores,
+  listMembers,
+  listRewards,
+  redeemReward,
+} from "@/lib/chores";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
 const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 
-type Status = "available" | "in_progress" | "completed";
-type Chore = {
-  id: number;
-  title: string;
-  detail: string;
-  points: number;
-  due: string;
-  assignee: string | null;
-  status: Status;
-};
-type Reward = { id: number; title: string; cost: number; scope: "Group" | "Personal" };
-
-const ME = "Alex Rivera";
-const GROUP = { name: "Maple House", members: 4 };
-
-const INITIAL_CHORES: Chore[] = [
-  { id: 1, title: "Kitchen deep clean", detail: "Counters, sink, stove, floors", points: 15, due: "Oct 12", assignee: null, status: "available" },
-  { id: 2, title: "Take out trash", detail: "Kitchen + bathrooms", points: 5, due: "Oct 11", assignee: "Jordan Lee", status: "in_progress" },
-  { id: 3, title: "Vacuum living room", detail: "Rugs and under couch", points: 10, due: "Oct 14", assignee: ME, status: "in_progress" },
-  { id: 4, title: "Grocery run", detail: "Shared list on fridge", points: 12, due: "Oct 13", assignee: null, status: "available" },
-  { id: 5, title: "Wipe bathrooms", detail: "Sinks, mirrors, counters", points: 10, due: "Oct 9", assignee: "Sam Okonkwo", status: "completed" },
-  { id: 6, title: "Laundry fold & put away", detail: "Shared towels only", points: 8, due: "Oct 16", assignee: null, status: "available" },
-];
-
-const REWARDS: Reward[] = [
-  { id: 1, title: "Pick dinner", cost: 25, scope: "Group" },
-  { id: 2, title: "Skip one chore", cost: 40, scope: "Group" },
-  { id: 3, title: "Choose movie night", cost: 20, scope: "Personal" },
-];
-
-const OTHER_MEMBERS = [
-  { name: "Sam Okonkwo", points: 55 },
-  { name: "Jordan Lee", points: 38 },
-  { name: "Riley Chen", points: 27 },
-];
+type NewChore = Omit<CreateChoreInput, "groupId">;
 
 const FILTERS = ["All", "Available", "Mine", "Done"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -67,52 +50,332 @@ function Icon({ d }: { d: string }) {
   );
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDue(iso: string) {
+  const [, month, day] = iso.split("-").map(Number);
+  if (!month || !day || month < 1 || month > 12) return iso;
+  return `${MONTHS[month - 1]} ${day}`;
+}
+
+function assigneeName(assigneeId: number | null, members: Member[]) {
+  if (assigneeId == null) return null;
+  return members.find((member) => member.id === assigneeId)?.name ?? "Unknown";
+}
+
+const inputClass =
+  "w-full rounded-xl border border-[#d5cde3] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
+
+function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: ReactNode }) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">
+        {label}
+        {optional && <span className="font-normal text-[#6b6590]"> (optional)</span>}
+      </label>
+      {children}
+      {error && <p className="mt-1.5 text-sm text-[#b3402f]">{error}</p>}
+    </div>
+  );
+}
+
+function RemoveChoreModal({
+  chores,
+  members,
+  pending,
+  onClose,
+  onRemove,
+}: {
+  chores: Chore[];
+  members: Member[];
+  pending: boolean;
+  onClose: () => void;
+  onRemove: (id: number) => void;
+}) {
+  const [confirmId, setConfirmId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-chore-title"
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[min(32rem,calc(100vh-2rem))] w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
+      >
+        <h2 id="remove-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Remove chore
+        </h2>
+        {chores.length === 0 ? (
+          <p className="text-sm text-[#6b6590]">No chores to remove.</p>
+        ) : (
+          <ul className="flex flex-col gap-2 overflow-y-auto">
+            {chores.map((chore) => {
+              const confirming = confirmId === chore.id;
+              const name = assigneeName(chore.assigneeId, members);
+              return (
+                <li key={chore.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{chore.title}</p>
+                    <p className="text-sm text-[#6b6590]">
+                      {formatDue(chore.due)}
+                      {name ? ` · ${name}` : ""}
+                    </p>
+                  </div>
+                  {confirming ? (
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onRemove(chore.id)}
+                        className="rounded-lg bg-[#b3402f] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(chore.id)}
+                      className="shrink-0 rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="flex justify-end">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore: NewChore) => void }) {
+  const [title, setTitle] = useState("");
+  const [detail, setDetail] = useState("");
+  const [points, setPoints] = useState("");
+  const [due, setDue] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const next: Record<string, string> = {};
+    const pts = Number(points);
+    if (!title.trim()) next.title = "Enter a chore title.";
+    if (!Number.isInteger(pts) || pts < 1) next.points = "Enter whole points, 1 or more.";
+    if (!due) next.due = "Pick a due date.";
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
+    onAdd({ title: title.trim(), detail: detail.trim(), points: pts, due });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-chore-title"
+        onSubmit={submit}
+        onClick={(event) => event.stopPropagation()}
+        noValidate
+        className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
+      >
+        <h2 id="add-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Add chore
+        </h2>
+
+        <Field id="chore-title" label="Title" error={errors.title}>
+          <input id="chore-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Clean the fridge" className={inputClass} />
+        </Field>
+
+        <Field id="chore-detail" label="Description" optional>
+          <textarea id="chore-detail" rows={2} value={detail} onChange={(event) => setDetail(event.target.value)} placeholder="Toss expired food, wipe shelves" className={`${inputClass} resize-none`} />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field id="chore-points" label="Points" error={errors.points}>
+            <input id="chore-points" type="number" min={1} step={1} inputMode="numeric" value={points} onChange={(event) => setPoints(event.target.value)} placeholder="10" className={inputClass} />
+          </Field>
+          <Field id="chore-due" label="Due date" error={errors.due}>
+            <input id="chore-due" type="date" value={due} onChange={(event) => setDue(event.target.value)} className={inputClass} />
+          </Field>
+        </div>
+
+        <div className="mt-2 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
+            Cancel
+          </button>
+          <button type="submit" className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e]">
+            Add chore
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function Home() {
-  const [chores, setChores] = useState(INITIAL_CHORES);
+  const [chores, setChores] = useState<Chore[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [ready, setReady] = useState(false);
+  const [pending, setPending] = useState(false);
   const [filter, setFilter] = useState<Filter>("All");
-  const [myPoints, setMyPoints] = useState(42);
   const [toast, setToast] = useState<string | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>("Chores");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const toastTimer = useRef<number | null>(null);
 
-  const notify = (msg: string) => {
+  const notify = useCallback((msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2400);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2400);
+  }, []);
+
+  const closeModal = useCallback(() => setModalOpen(false), []);
+  const closeRemove = useCallback(() => setRemoveOpen(false), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listChores(CURRENT_GROUP.id), listMembers(CURRENT_GROUP.id), listRewards()])
+      .then(([nextChores, nextMembers, nextRewards]) => {
+        if (cancelled) return;
+        setChores(nextChores);
+        setMembers(nextMembers);
+        setRewards(nextRewards);
+      })
+      .catch(() => {
+        if (!cancelled) notify("Could not load chores");
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [notify]);
+
+  const myPoints = members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0;
+
+  const claim = async (id: number) => {
+    if (pending) return;
+    setPending(true);
+    try {
+      const chore = await claimChore(id);
+      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
+      notify("Chore claimed");
+    } catch {
+      notify("Could not claim chore");
+    } finally {
+      setPending(false);
+    }
   };
 
-  const claim = (id: number) => {
-    setChores((cs) => cs.map((c) => (c.id === id ? { ...c, assignee: ME, status: "in_progress" } : c)));
-    notify("Chore claimed");
+  const complete = async (id: number) => {
+    if (pending) return;
+    setPending(true);
+    try {
+      const { chore, points } = await completeChore(id);
+      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
+      setMembers((current) => current.map((member) => (member.id === CURRENT_USER.id ? { ...member, points } : member)));
+      notify(`Completed. +${chore.points} points`);
+    } catch {
+      notify("Could not complete chore");
+    } finally {
+      setPending(false);
+    }
   };
 
-  const complete = (id: number) => {
-    const chore = chores.find((c) => c.id === id);
-    if (!chore) return;
-    setChores((cs) => cs.map((c) => (c.id === id ? { ...c, status: "completed" } : c)));
-    setMyPoints((p) => p + chore.points);
-    notify(`Completed. +${chore.points} points`);
+  const redeem = async (reward: Reward) => {
+    if (pending || myPoints < reward.cost) return;
+    setPending(true);
+    try {
+      const member = await redeemReward(reward.id);
+      setMembers((current) => current.map((item) => (item.id === member.id ? member : item)));
+      notify(`Redeemed: ${reward.title}`);
+    } catch {
+      notify("Could not redeem reward");
+    } finally {
+      setPending(false);
+    }
   };
 
-  const redeem = (reward: Reward) => {
-    if (myPoints < reward.cost) return;
-    setMyPoints((p) => p - reward.cost);
-    notify(`Redeemed: ${reward.title}`);
+  const removeChore = async (id: number) => {
+    if (pending) return;
+    setPending(true);
+    try {
+      await deleteChore(id);
+      setChores((current) => current.filter((chore) => chore.id !== id));
+      notify("Chore removed");
+    } catch {
+      notify("Could not remove chore");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const addChore = async (input: NewChore) => {
+    if (pending) return;
+    setPending(true);
+    try {
+      const chore = await createChore({ ...input, groupId: CURRENT_GROUP.id });
+      setChores((current) => [...current, chore]);
+      setFilter("All");
+      setModalOpen(false);
+      notify("Chore added");
+    } catch {
+      notify("Could not add chore");
+    } finally {
+      setPending(false);
+    }
   };
 
   const visible = useMemo(
     () =>
-      chores.filter((c) => {
-        if (filter === "Available") return c.status === "available";
-        if (filter === "Mine") return c.assignee === ME;
-        if (filter === "Done") return c.status === "completed";
+      chores.filter((chore) => {
+        if (filter === "Available") return chore.status === "available";
+        if (filter === "Mine") return chore.assigneeId === CURRENT_USER.id;
+        if (filter === "Done") return chore.status === "completed";
         return true;
       }),
     [chores, filter],
   );
 
   const leaderboard = useMemo(
-    () => [...OTHER_MEMBERS, { name: ME, points: myPoints }].sort((a, b) => b.points - a.points),
-    [myPoints],
+    () => [...members].sort((a, b) => b.points - a.points),
+    [members],
   );
 
   return (
@@ -143,8 +406,8 @@ export default function Home() {
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="grid h-8 w-8 place-items-center rounded-full bg-[#cdbfe0] text-sm font-semibold text-[#1e2d54]">A</div>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold text-white">{ME}</p>
-            <p className="truncate text-xs text-[#b8c0da]">alex@umass.edu</p>
+            <p className="truncate text-sm font-semibold text-white">{CURRENT_USER.name}</p>
+            <p className="truncate text-xs text-[#b8c0da]">{CURRENT_USER.email}</p>
           </div>
           <button
             type="button"
@@ -202,6 +465,18 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (s === "Add chore") {
+                            setRemoveOpen(false);
+                            setModalOpen(true);
+                            setMobileOpen(false);
+                            return;
+                          }
+                          if (s === "Remove chore") {
+                            setModalOpen(false);
+                            setRemoveOpen(true);
+                            setMobileOpen(false);
+                            return;
+                          }
                           notify(`${s} (coming soon)`);
                           setMobileOpen(false);
                         }}
@@ -230,8 +505,8 @@ export default function Home() {
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
-            <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">{GROUP.name}</h1>
-            <p className="mt-1 text-[#7c6f9c]">{GROUP.members} members · You are a member</p>
+            <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">{CURRENT_GROUP.name}</h1>
+            <p className="mt-1 text-[#7c6f9c]">{CURRENT_GROUP.memberCount} members · You are a member</p>
           </div>
           <div className="flex gap-2 text-sm">
             <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">Weekly reset: Sunday</span>
@@ -276,18 +551,18 @@ export default function Home() {
                 <tbody>
                   {visible.map((c) => {
                     const s = STATUS_STYLE[c.status];
-                    const mine = c.assignee === ME;
+                    const mine = c.assigneeId === CURRENT_USER.id;
                     return (
                       <tr key={c.id} className="border-b border-[#d5cde3] last:border-0">
                         <td className="py-4 pr-4">
                           <p className="font-semibold">{c.title}</p>
-                          <p className="text-sm text-[#6b6590]">{c.detail}</p>
+                          {c.detail && <p className="text-sm text-[#6b6590]">{c.detail}</p>}
                         </td>
                         <td className="pr-4">
                           <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
                         </td>
-                        <td className="pr-4 text-[15px]">{c.due}</td>
-                        <td className="pr-4 text-[15px]">{c.assignee ?? "—"}</td>
+                        <td className="pr-4 text-[15px]">{formatDue(c.due)}</td>
+                        <td className="pr-4 text-[15px]">{assigneeName(c.assigneeId, members) ?? "—"}</td>
                         <td className="pr-4">
                           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${s.pill}`}>
                             <span className={`h-2 w-2 rounded-full ${s.dot}`} />
@@ -317,7 +592,10 @@ export default function Home() {
                   })}
                 </tbody>
               </table>
-              {visible.length === 0 && (
+              {!ready && (
+                <p className="py-10 text-center text-[#6b6590]">Loading chores…</p>
+              )}
+              {ready && visible.length === 0 && (
                 <p className="py-10 text-center text-[#6b6590]">No chores match this filter. Try another tab.</p>
               )}
             </div>
@@ -328,7 +606,7 @@ export default function Home() {
             <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5">
               <h2 className="text-xl font-semibold">Possible rewards</h2>
               <ul className="mt-4 flex flex-col gap-3">
-                {REWARDS.map((r) => (
+                {rewards.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] p-3.5">
                     <div>
                       <p className="font-semibold leading-snug">{r.title}</p>
@@ -351,9 +629,9 @@ export default function Home() {
               <h2 className="text-xl font-semibold">Points tracker</h2>
               <ol className="mt-4 flex flex-col gap-3">
                 {leaderboard.map((m, i) => (
-                  <li key={m.name} className="flex items-center gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
+                  <li key={m.id} className="flex items-center gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">{i + 1}</span>
-                    <span className="flex-1 font-semibold">{m.name}{m.name === ME && " (you)"}</span>
+                    <span className="flex-1 font-semibold">{m.name}{m.id === CURRENT_USER.id && " (you)"}</span>
                     <span className="font-semibold text-[#9a7fb0]">{m.points}</span>
                   </li>
                 ))}
@@ -361,6 +639,17 @@ export default function Home() {
             </section>
           </div>
         </div>
+
+        {modalOpen && <AddChoreModal onClose={closeModal} onAdd={addChore} />}
+        {removeOpen && (
+          <RemoveChoreModal
+            chores={chores}
+            members={members}
+            pending={pending}
+            onClose={closeRemove}
+            onRemove={removeChore}
+          />
+        )}
 
         <div
           role="status"
