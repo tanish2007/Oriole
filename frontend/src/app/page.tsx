@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Fraunces, Outfit } from "next/font/google";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
@@ -52,10 +52,11 @@ const STATUS_STYLE: Record<Status, { label: string; pill: string; dot: string }>
 };
 
 const NAV = [
-  { label: "Groups", href: "#", icon: "M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.2.5-2.2 1.3-3-.9-.6-2.2-1-3.3-1Zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4Z" },
-  { label: "Chores", href: "#", icon: "M9 12l2 2 4-4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z", active: true, expandable: true },
-  { label: "Calendar", href: "#", icon: "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" },
-  { label: "Leaderboard", href: "#", icon: "M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v1a3 3 0 0 0 3 3m10-4h3v1a3 3 0 0 1-3 3" },
+  { label: "Groups", icon: "M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.2.5-2.2 1.3-3-.9-.6-2.2-1-3.3-1Zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4Z", sub: ["Maple House", "Study Squad", "Invite member"] },
+  // Highlight stays on Chores because this screen is the chores page.
+  { label: "Chores", icon: "M9 12l2 2 4-4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z", active: true, sub: ["Add chore", "Remove chore", "Update rewards"] },
+  { label: "Calendar", icon: "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" },
+  { label: "Leaderboard", icon: "M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v1a3 3 0 0 0 3 3m10-4h3v1a3 3 0 0 1-3 3" },
 ];
 
 function Icon({ d }: { d: string }) {
@@ -66,112 +67,13 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-type NewChore = { title: string; detail: string; points: number; due: string };
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// "2026-10-12" -> "Oct 12" (split manually so time zones can't shift the day)
-function formatDue(iso: string) {
-  const [, m, d] = iso.split("-").map(Number);
-  return `${MONTHS[m - 1]} ${d}`;
-}
-
-const inputClass =
-  "w-full rounded-xl border border-[#d5cde3] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
-
-function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: ReactNode }) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">
-        {label}
-        {optional && <span className="font-normal text-[#6b6590]"> (optional)</span>}
-      </label>
-      {children}
-      {error && <p className="mt-1.5 text-sm text-[#b3402f]">{error}</p>}
-    </div>
-  );
-}
-
-function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore: NewChore) => void }) {
-  const [title, setTitle] = useState("");
-  const [detail, setDetail] = useState("");
-  const [points, setPoints] = useState("");
-  const [due, setDue] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Close on Escape
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const next: Record<string, string> = {};
-    const pts = Number(points);
-    if (!title.trim()) next.title = "Enter a chore title.";
-    if (!Number.isInteger(pts) || pts < 1) next.points = "Enter whole points, 1 or more.";
-    if (!due) next.due = "Pick a due date.";
-    setErrors(next);
-    if (Object.keys(next).length > 0) return;
-    onAdd({ title: title.trim(), detail: detail.trim(), points: pts, due });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
-      <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-chore-title"
-        onSubmit={submit}
-        onClick={(e) => e.stopPropagation()}
-        noValidate
-        className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
-      >
-        <h2 id="add-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
-          Add chore
-        </h2>
-
-        <Field id="chore-title" label="Title" error={errors.title}>
-          <input id="chore-title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Clean the fridge" className={inputClass} />
-        </Field>
-
-        <Field id="chore-detail" label="Description" optional>
-          <textarea id="chore-detail" rows={2} value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Toss expired food, wipe shelves" className={`${inputClass} resize-none`} />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field id="chore-points" label="Points" error={errors.points}>
-            <input id="chore-points" type="number" min={1} step={1} inputMode="numeric" value={points} onChange={(e) => setPoints(e.target.value)} placeholder="10" className={inputClass} />
-          </Field>
-          <Field id="chore-due" label="Due date" error={errors.due}>
-            <input id="chore-due" type="date" value={due} onChange={(e) => setDue(e.target.value)} className={inputClass} />
-          </Field>
-        </div>
-
-        <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
-            Cancel
-          </button>
-          <button type="submit" className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e]">
-            Add chore
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 export default function Home() {
   const [chores, setChores] = useState(INITIAL_CHORES);
   const [filter, setFilter] = useState<Filter>("All");
   const [myPoints, setMyPoints] = useState(42);
   const [toast, setToast] = useState<string | null>(null);
-  const [choresMenuOpen, setChoresMenuOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>("Chores");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -197,24 +99,6 @@ export default function Home() {
     notify(`Redeemed: ${reward.title}`);
   };
 
-  const addChore = (input: NewChore) => {
-    setChores((cs) => [
-      ...cs,
-      {
-        id: Math.max(0, ...cs.map((c) => c.id)) + 1,
-        title: input.title,
-        detail: input.detail,
-        points: input.points,
-        due: formatDue(input.due),
-        assignee: null,
-        status: "available",
-      },
-    ]);
-    setFilter("All"); // make sure the new chore is visible
-    setModalOpen(false);
-    notify("Chore added");
-  };
-
   const visible = useMemo(
     () =>
       chores.filter((c) => {
@@ -234,61 +118,103 @@ export default function Home() {
   return (
     <div className={`${display.variable} ${sans.variable} flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]`}>
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-52 shrink-0 flex-col bg-[#1e2d54] p-3 text-[#dfe3f0] md:flex">
+      {!mobileOpen && (
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={false}
+          aria-controls="sidebar"
+          className="fixed left-3 top-3 z-40 grid h-10 w-10 place-items-center rounded-xl border border-[#d9d0e6] bg-white/80 text-lg md:hidden"
+        >
+          ☰
+        </button>
+      )}
+      {mobileOpen && (
+        <div onClick={() => setMobileOpen(false)} className="fixed inset-0 z-20 bg-[#1e2d54]/40 md:hidden" />
+      )}
+
+      <aside
+        id="sidebar"
+        className={`fixed inset-y-0 left-0 z-30 flex w-64 shrink-0 flex-col bg-[#1e2d54] p-3 text-[#dfe3f0] transition-transform duration-200 md:sticky md:top-0 md:h-screen md:w-52 md:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="grid h-8 w-8 place-items-center rounded-full bg-[#cdbfe0] text-sm font-semibold text-[#1e2d54]">A</div>
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-semibold text-white">{ME}</p>
             <p className="truncate text-xs text-[#b8c0da]">alex@umass.edu</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+            aria-expanded={true}
+            aria-controls="sidebar"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-lg text-white hover:bg-white/10 md:hidden"
+          >
+            ×
+          </button>
         </div>
 
         <nav className="mt-8 flex flex-col gap-1">
-          {NAV.map((item) => {
-            const classes = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
-              item.active ? "bg-white/10 text-white" : "hover:bg-white/5"
-            }`;
-
-            if (!item.expandable) {
-              return (
-                <a key={item.label} href={item.href} className={classes}>
-                  <Icon d={item.icon} />
-                  {item.label}
-                </a>
-              );
-            }
-
-            return (
-              <div key={item.label}>
-                <button
-                  type="button"
-                  onClick={() => setChoresMenuOpen((open) => !open)}
-                  aria-expanded={choresMenuOpen}
-                  aria-controls="chores-submenu"
-                  aria-current="page"
-                  className={classes}
-                >
-                  <Icon d={item.icon} />
-                  <span className="flex-1 text-left">{item.label}</span>
-                  <svg viewBox="0 0 24 24" className={`h-4 w-4 transition-transform ${choresMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="m6 9 6 6 6-6" />
+          {NAV.map((item) => (
+            <div key={item.label}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (item.sub) {
+                    setOpenMenu(openMenu === item.label ? null : item.label);
+                    return;
+                  }
+                  notify(`${item.label} (coming soon)`);
+                  setMobileOpen(false);
+                }}
+                aria-current={item.active ? "page" : undefined}
+                aria-expanded={item.sub ? openMenu === item.label : undefined}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
+                  item.active ? "bg-white/10 text-white" : "hover:bg-white/5"
+                }`}
+              >
+                <Icon d={item.icon} />
+                {item.label}
+                {item.sub && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`ml-auto h-4 w-4 shrink-0 transition-transform ${openMenu === item.label ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M6 9l6 6 6-6" />
                   </svg>
-                </button>
-                {choresMenuOpen && (
-                  <div id="chores-submenu" className="ml-5 mt-1 border-l border-white/15 pl-3">
-                    <button
-                      type="button"
-                      onClick={() => setModalOpen(true)}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#cdbfe0]"
-                    >
-                      <span aria-hidden className="text-base leading-none">+</span>
-                      Add chore
-                    </button>
-                  </div>
                 )}
-              </div>
-            );
-          })}
+              </button>
+
+              {item.sub && openMenu === item.label && (
+                <ul className="ml-5 mt-1 flex flex-col gap-0.5 border-l border-white/20 pl-3">
+                  {item.sub.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          notify(`${s} (coming soon)`);
+                          setMobileOpen(false);
+                        }}
+                        className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-white/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#cdbfe0]"
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </nav>
 
         <div className="mt-auto flex items-center gap-2.5 p-2">
@@ -300,7 +226,7 @@ export default function Home() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 bg-gradient-to-br from-[#e6dbe9] via-[#f1e4e8] to-[#e4d8e8] p-5 sm:p-8">
+      <main className="flex-1 bg-gradient-to-br from-[#e6dbe9] via-[#f1e4e8] to-[#e4d8e8] p-5 pt-16 sm:p-8 sm:pt-16 md:pt-8">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
@@ -355,7 +281,7 @@ export default function Home() {
                       <tr key={c.id} className="border-b border-[#d5cde3] last:border-0">
                         <td className="py-4 pr-4">
                           <p className="font-semibold">{c.title}</p>
-                          {c.detail && <p className="text-sm text-[#6b6590]">{c.detail}</p>}
+                          <p className="text-sm text-[#6b6590]">{c.detail}</p>
                         </td>
                         <td className="pr-4">
                           <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
@@ -435,8 +361,6 @@ export default function Home() {
             </section>
           </div>
         </div>
-
-        {modalOpen && <AddChoreModal onClose={() => setModalOpen(false)} onAdd={addChore} />}
 
         <div
           role="status"
