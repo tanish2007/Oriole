@@ -52,10 +52,11 @@ const STATUS_STYLE: Record<Status, { label: string; pill: string; dot: string }>
 };
 
 const NAV = [
-  { label: "Groups", href: "#", icon: "M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.2.5-2.2 1.3-3-.9-.6-2.2-1-3.3-1Zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4Z" },
-  { label: "Chores", href: "#", icon: "M9 12l2 2 4-4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z", active: true },
-  { label: "Calendar", href: "#", icon: "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" },
-  { label: "Leaderboard", href: "#", icon: "M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v1a3 3 0 0 0 3 3m10-4h3v1a3 3 0 0 1-3 3" },
+  { label: "Groups", icon: "M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.2.5-2.2 1.3-3-.9-.6-2.2-1-3.3-1Zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4Z", sub: ["Maple House", "Study Squad", "Invite member"] },
+  // Highlight stays on Chores because this screen is the chores page.
+  { label: "Chores", icon: "M9 12l2 2 4-4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z", active: true, sub: ["Add chore", "Remove chore", "Update rewards"] },
+  { label: "Calendar", icon: "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" },
+  { label: "Leaderboard", icon: "M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v1a3 3 0 0 0 3 3m10-4h3v1a3 3 0 0 1-3 3" },
 ];
 
 function Icon({ d }: { d: string }) {
@@ -71,6 +72,8 @@ export default function Home() {
   const [filter, setFilter] = useState<Filter>("All");
   const [myPoints, setMyPoints] = useState(42);
   const [toast, setToast] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>("Chores");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -115,28 +118,102 @@ export default function Home() {
   return (
     <div className={`${display.variable} ${sans.variable} flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]`}>
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-52 shrink-0 flex-col bg-[#1e2d54] p-3 text-[#dfe3f0] md:flex">
+      {!mobileOpen && (
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={false}
+          aria-controls="sidebar"
+          className="fixed left-3 top-3 z-40 grid h-10 w-10 place-items-center rounded-xl border border-[#d9d0e6] bg-white/80 text-lg md:hidden"
+        >
+          ☰
+        </button>
+      )}
+      {mobileOpen && (
+        <div onClick={() => setMobileOpen(false)} className="fixed inset-0 z-20 bg-[#1e2d54]/40 md:hidden" />
+      )}
+
+      <aside
+        id="sidebar"
+        className={`fixed inset-y-0 left-0 z-30 flex w-64 shrink-0 flex-col bg-[#1e2d54] p-3 text-[#dfe3f0] transition-transform duration-200 md:sticky md:top-0 md:h-screen md:w-52 md:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="grid h-8 w-8 place-items-center rounded-full bg-[#cdbfe0] text-sm font-semibold text-[#1e2d54]">A</div>
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-semibold text-white">{ME}</p>
             <p className="truncate text-xs text-[#b8c0da]">alex@umass.edu</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+            aria-expanded={true}
+            aria-controls="sidebar"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-lg text-white hover:bg-white/10 md:hidden"
+          >
+            ×
+          </button>
         </div>
 
         <nav className="mt-8 flex flex-col gap-1">
           {NAV.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              aria-current={item.active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
-                item.active ? "bg-white/10 text-white" : "hover:bg-white/5"
-              }`}
-            >
-              <Icon d={item.icon} />
-              {item.label}
-            </a>
+            <div key={item.label}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (item.sub) {
+                    setOpenMenu(openMenu === item.label ? null : item.label);
+                    return;
+                  }
+                  notify(`${item.label} (coming soon)`);
+                  setMobileOpen(false);
+                }}
+                aria-current={item.active ? "page" : undefined}
+                aria-expanded={item.sub ? openMenu === item.label : undefined}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
+                  item.active ? "bg-white/10 text-white" : "hover:bg-white/5"
+                }`}
+              >
+                <Icon d={item.icon} />
+                {item.label}
+                {item.sub && (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`ml-auto h-4 w-4 shrink-0 transition-transform ${openMenu === item.label ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                )}
+              </button>
+
+              {item.sub && openMenu === item.label && (
+                <ul className="ml-5 mt-1 flex flex-col gap-0.5 border-l border-white/20 pl-3">
+                  {item.sub.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          notify(`${s} (coming soon)`);
+                          setMobileOpen(false);
+                        }}
+                        className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-white/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#cdbfe0]"
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ))}
         </nav>
 
@@ -149,7 +226,7 @@ export default function Home() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 bg-gradient-to-br from-[#e6dbe9] via-[#f1e4e8] to-[#e4d8e8] p-5 sm:p-8">
+      <main className="flex-1 bg-gradient-to-br from-[#e6dbe9] via-[#f1e4e8] to-[#e4d8e8] p-5 pt-16 sm:p-8 sm:pt-16 md:pt-8">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
