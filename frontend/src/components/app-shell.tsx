@@ -30,7 +30,7 @@ const NAV: NavItem[] = [
   {
     label: "Groups",
     icon: "M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.2.5-2.2 1.3-3-.9-.6-2.2-1-3.3-1Zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4Z",
-    sub: [{ label: "Maple House" }, { label: "Study Squad" }, { label: "Invite member" }],
+    sub: [{ label: "Team Oriole" }, { label: "Study Squad" }, { label: "Invite member" }],
   },
   {
     label: "Chores",
@@ -55,7 +55,7 @@ const NAV: NavItem[] = [
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d={d} />
     </svg>
   );
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-label="Open menu"
             aria-expanded={false}
             aria-controls="sidebar"
-            className="fixed left-3 top-3 z-40 grid h-10 w-10 place-items-center rounded-xl border border-[#d9d0e6] bg-white/80 text-lg md:hidden"
+            className="fixed left-4 top-4 z-40 grid h-12 w-12 place-items-center rounded-xl border border-[#d9d0e6] bg-white/80 text-xl md:hidden"
           >
             ☰
           </button>
@@ -110,15 +110,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <aside
           id="sidebar"
-          className={`fixed inset-y-0 left-0 z-30 flex w-64 shrink-0 flex-col bg-[#1e2d54] p-3 text-[#dfe3f0] transition-transform duration-200 md:sticky md:top-0 md:h-screen md:w-52 md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-30 flex w-80 shrink-0 flex-col bg-[#1e2d54] p-4 text-[#dfe3f0] transition-transform duration-200 md:sticky md:top-0 md:h-screen md:w-72 md:translate-x-0 ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-[#cdbfe0] text-sm font-semibold text-[#1e2d54]">A</div>
-            <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold text-white">{CURRENT_USER.name}</p>
-              <p className="truncate text-xs text-[#b8c0da]">{CURRENT_USER.email}</p>
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3.5">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-base font-semibold text-[#1e2d54]">{CURRENT_USER.name.charAt(0)}</div>
+            <div className="min-w-0 flex-1 leading-snug">
+              <p className="truncate text-base font-semibold text-white">{CURRENT_USER.name}</p>
+              <p className="break-all text-sm text-[#b8c0da]">{CURRENT_USER.email}</p>
             </div>
             <button
               type="button"
@@ -126,16 +126,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-label="Close menu"
               aria-expanded={true}
               aria-controls="sidebar"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-lg text-white hover:bg-white/10 md:hidden"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-xl text-white hover:bg-white/10 md:hidden"
             >
               ×
             </button>
           </div>
 
-          <nav className="mt-8 flex flex-col gap-1" aria-label="Main">
+          <nav className="mt-8 flex flex-col gap-1.5" aria-label="Main">
             {NAV.map((item) => {
               const active = itemActive(item.label, pathname);
-              const className = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
+              const className = `flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0] ${
                 active ? "bg-white/10 text-white" : "hover:bg-white/5"
               }`;
               const contents = (
@@ -145,7 +145,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {item.sub && (
                     <svg
                       viewBox="0 0 24 24"
-                      className={`ml-auto h-4 w-4 shrink-0 transition-transform ${openMenu === item.label ? "rotate-180" : ""}`}
+                      className={`ml-auto h-5 w-5 shrink-0 transition-transform ${openMenu === item.label ? "rotate-180" : ""}`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.7"
@@ -202,7 +202,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
 
                   {item.sub && openMenu === item.label && (
-                    <ul className="ml-5 mt-1 flex flex-col gap-0.5 border-l border-white/20 pl-3">
+                    <ul className="ml-6 mt-1.5 flex flex-col gap-1 border-l border-white/20 pl-3">
                       {item.sub.map((sub) => (
                         <li key={sub.label}>
                           {sub.href ? (
@@ -210,7 +210,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                               href={sub.href}
                               aria-current={pathname === sub.href ? "page" : undefined}
                               onClick={() => setMobileOpen(false)}
-                              className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#cdbfe0] ${
+                              className={`block w-full rounded-lg px-3 py-2.5 text-left text-base hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0] ${
                                 pathname === sub.href ? "bg-white/10 text-white" : "text-white/85"
                               }`}
                             >
@@ -223,7 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                                 notify(`${sub.label} (coming soon)`);
                                 setMobileOpen(false);
                               }}
-                              className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-white/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[#cdbfe0]"
+                              className="w-full rounded-lg px-3 py-2.5 text-left text-base text-white/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
                             >
                               {sub.label}
                             </button>
@@ -237,11 +237,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="mt-auto flex items-center gap-2.5 p-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/10">
-              <span className="h-3.5 w-3.5 rounded-[4px] border-2 border-white/80" />
+          <div className="mt-auto flex items-center gap-3 p-2">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-white/10">
+              <span className="h-4 w-4 rounded-[4px] border-2 border-white/80" />
             </div>
-            <span className="font-[family-name:var(--font-display)] text-lg font-semibold text-white">ChoreShare</span>
+            <span className="font-[family-name:var(--font-display)] text-xl font-semibold text-white">ChoreShare</span>
           </div>
         </aside>
 
@@ -252,7 +252,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-[#1c2750] px-5 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-200 ${
+          className={`fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-[#1c2750] px-5 py-3 text-base font-medium text-white shadow-lg transition-all duration-200 ${
             toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
         >

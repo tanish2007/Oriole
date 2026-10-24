@@ -1,16 +1,22 @@
+import logging
 import os
 from functools import lru_cache
 
 from fastapi import HTTPException
 from supabase import Client, create_client
 
+from memory import DemoClient, demo_client
+
+log = logging.getLogger("uvicorn.error")
+
 
 @lru_cache
-def get_supabase() -> Client:
+def get_supabase() -> Client | DemoClient:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     if not url or not key:
-        raise HTTPException(status_code=500, detail="Supabase is not configured")
+        log.warning("Supabase is not configured. Serving the in-memory Team Oriole demo.")
+        return demo_client()
     return create_client(url, key)
 
 
