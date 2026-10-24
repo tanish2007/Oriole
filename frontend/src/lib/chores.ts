@@ -3,7 +3,7 @@
  * Replace the bodies with fetch() when the backend routes exist.
  */
 
-import * as api from "@/lib/api/gen/default";
+import * as api from "@/lib/api/gen/groups";
 import { GroupInviteCodeResponse, GroupJoinResponse } from "./api/gen/schemas";
 
 export type Status = "available" | "in_progress" | "completed";
