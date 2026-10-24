@@ -7,5 +7,5 @@
 
 export type GetInviteCodeParams = {
 group_id: number;
-user_id: string;
+user_id: number;
 };
