@@ -4,6 +4,9 @@
  * Dates stay ISO (YYYY-MM-DD). The UI formats them for display.
  */
 
+import * as api from "@/lib/api/gen/default";
+import { GroupCreateResponse, GroupInviteCodeResponse, GroupJoinResponse } from "./api/gen/schemas";
+
 export type Status = "available" | "in_progress" | "completed";
 
 export type Member = {
@@ -50,6 +53,8 @@ export const CURRENT_USER = {
   email: "alex@umass.edu",
 };
 
+const TEMP_USER_ID = String(CURRENT_USER.id);
+
 export const CURRENT_GROUP: Group = {
   id: 1,
   name: "Maple House",
@@ -79,6 +84,39 @@ const rewards: Reward[] = [
   { id: 2, title: "Skip one chore", cost: 40, scope: "Group" },
   { id: 3, title: "Choose movie night", cost: 20, scope: "Personal" },
 ];
+
+export async function getInviteCode(groupId: number): Promise<GroupInviteCodeResponse>
+{
+  const response = await api.getInviteCode({group_id: groupId, user_id: TEMP_USER_ID});
+  if (response.status !== 200)
+  {
+    throw new Error("Failed to get invite code");
+  }
+
+  return response.data;
+}
+
+export async function createGroup(name: string): Promise<GroupCreateResponse>
+{
+  const response = await api.createGroup({name, owner_id: TEMP_USER_ID});
+  if (response.status !== 201)
+  {
+    throw new Error("Failed to create group");
+  }
+
+  return response.data;
+}
+
+export async function joinGroup(inviteCode: string): Promise<GroupJoinResponse>
+{
+  const response = await api.joinGroup({user_id: TEMP_USER_ID, invite_code: inviteCode});
+  if (response.status !== 200)
+  {
+    throw new Error("Failed to join group");
+  }
+
+  return response.data;
+}
 
 function copyMember(member: Member): Member {
   return { ...member };
