@@ -6,14 +6,26 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 
 
-app = FastAPI()
+app = FastAPI(generate_unique_id_function=lambda route: route.name)
 
 class GroupCreate(BaseModel):
     name: str
     owner_id: str
 
+class GroupCreateResponse(BaseModel):
+    message: str
+    invite_code: str
+    group_id: int
+
 class GroupJoin(BaseModel):
     user_id: str
+    invite_code: str
+
+class GroupJoinResponse(BaseModel):
+    message: str
+    group_id: int
+
+class GroupInviteCodeResponse(BaseModel):
     invite_code: str
 
 @app.get("/")
@@ -26,7 +38,7 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "your_supabase_anon_key_here")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-@app.post("/groups")
+@app.post("/groups", response_model=GroupCreateResponse)
 async def create_group(group: GroupCreate):
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     
@@ -52,7 +64,7 @@ async def create_group(group: GroupCreate):
     
     return {"message": f"Household '{group.name}' created", "invite_code": code, "group_id": new_group_id}
 
-@app.post("/groups/join")
+@app.post("/groups/join", response_model=GroupJoinResponse)
 async def join_group(join_request: GroupJoin):
 
     group_res = supabase.table("groups").select("id").eq("invite_code", join_request.invite_code).execute()
@@ -76,8 +88,8 @@ async def join_group(join_request: GroupJoin):
     
     return {"message": "Successfully joined the household", "group_id": group_id}
 
-@app.get("/g")
-async def get_invite_code(group_id: str, user_id: str):
+@app.get("/g", response_model=GroupInviteCodeResponse)
+async def get_invite_code(group_id: int, user_id: str):
     member_check = supabase.table("group_members").select("id").eq("group_id", group_id).eq("user_id", user_id).execute()
     
     if not member_check.data:
