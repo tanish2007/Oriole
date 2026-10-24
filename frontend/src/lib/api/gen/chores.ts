@@ -7,12 +7,14 @@
 import type {
   ChoreCreate,
   ChoreResponse,
+  ChoreUpdate,
   ClaimChoreParams,
   CompleteChoreParams,
   CompleteChoreResponse,
   DeleteChoreParams,
   GetChoreParams,
-  ListChoresParams
+  ListChoresParams,
+  UpdateChoreParams
 } from './schemas';
 
 import { apiFetch } from '../fetch';
@@ -100,6 +102,40 @@ export const getChore = async (choreId: number,
     method: 'GET'
     
     
+  }
+);}
+
+
+/**
+ * @summary Update Chore
+ */
+export const getUpdateChoreUrl = (choreId: number,
+    params: UpdateChoreParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}`
+}
+
+export const updateChore = async (choreId: number,
+    choreUpdate: ChoreUpdate,
+    params: UpdateChoreParams, options?: RequestInit): Promise<ChoreResponse> => {
+  
+  return apiFetch<ChoreResponse>(getUpdateChoreUrl(choreId,params),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      choreUpdate,)
   }
 );}
 

@@ -18,12 +18,16 @@ export type Chore = {
   status: Status;
 };
 
-export type CreateChoreInput = {
-  groupId: number;
+/** The fields a chore form edits. */
+export type ChoreInput = {
   title: string;
   detail: string;
   points: number;
   due: string;
+};
+
+export type CreateChoreInput = ChoreInput & {
+  groupId: number;
 };
 
 export type RewardScope = "Group" | "Personal";

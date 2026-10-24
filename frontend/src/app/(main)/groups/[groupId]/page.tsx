@@ -7,7 +7,7 @@ import { useGroup, useNotify } from "@/components/app-shell";
 import {
   CURRENT_USER,
   type Chore,
-  type CreateChoreInput,
+  type ChoreInput,
   type Member,
   type Status,
   claimChore,
@@ -16,12 +16,11 @@ import {
   deleteChore,
   listChores,
   listMembers,
+  updateChore,
 } from "@/lib/chores";
 import { getLeaderboard, type LeaderboardEntry } from "@/lib/leaderboard";
 import { type Reward, listRewards, redeemReward } from "@/lib/rewards";
 import { householdPath } from "@/lib/session";
-
-type NewChore = Omit<CreateChoreInput, "groupId">;
 
 const FILTERS = ["All", "Available", "Mine", "Done"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -154,11 +153,25 @@ function RemoveChoreModal({
   );
 }
 
-function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore: NewChore) => void }) {
-  const [title, setTitle] = useState("");
-  const [detail, setDetail] = useState("");
-  const [points, setPoints] = useState("");
-  const [due, setDue] = useState("");
+function ChoreModal({
+  heading,
+  submitLabel,
+  initial,
+  pending,
+  onClose,
+  onSubmit,
+}: {
+  heading: string;
+  submitLabel: string;
+  initial?: ChoreInput;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: (chore: ChoreInput) => void;
+}) {
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [detail, setDetail] = useState(initial?.detail ?? "");
+  const [points, setPoints] = useState(initial ? String(initial.points) : "");
+  const [due, setDue] = useState(initial?.due ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -178,7 +191,7 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore:
     if (!due) next.due = "Pick a due date.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    onAdd({ title: title.trim(), detail: detail.trim(), points: pts, due });
+    onSubmit({ title: title.trim(), detail: detail.trim(), points: pts, due });
   };
 
   return (
@@ -186,14 +199,14 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore:
       <form
         role="dialog"
         aria-modal="true"
-        aria-labelledby="add-chore-title"
+        aria-labelledby="chore-modal-title"
         onSubmit={submit}
         onClick={(event) => event.stopPropagation()}
         noValidate
         className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
-        <h2 id="add-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
-          Add chore
+        <h2 id="chore-modal-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          {heading}
         </h2>
 
         <Field id="chore-title" label="Title" error={errors.title}>
@@ -217,8 +230,8 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore:
           <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
             Cancel
           </button>
-          <button type="submit" className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e]">
-            Add chore
+          <button type="submit" disabled={pending} className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e] disabled:opacity-50">
+            {submitLabel}
           </button>
         </div>
       </form>
@@ -241,6 +254,15 @@ export default function ChoresPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [filter, setFilter] = useState<Filter>("All");
+  const [editing, setEditing] = useState<Chore | null>(null);
+  const [confirmId, setConfirmId] = useState<number | null>(null);
+
+  // A first click on Remove arms it. Without a second click it goes back after 3 seconds.
+  useEffect(() => {
+    if (confirmId == null) return;
+    const timer = window.setTimeout(() => setConfirmId(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [confirmId]);
   const modalOpen = panel === "add";
   const removeOpen = panel === "remove";
 
@@ -331,6 +353,7 @@ export default function ChoresPage() {
     try {
       await deleteChore(id);
       setChores((current) => current.filter((chore) => chore.id !== id));
+      setConfirmId(null);
       notify("Chore removed");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Could not remove chore");
@@ -339,7 +362,24 @@ export default function ChoresPage() {
     }
   };
 
-  const addChore = async (input: NewChore) => {
+  const closeEdit = useCallback(() => setEditing(null), []);
+
+  const saveEdit = async (input: ChoreInput) => {
+    if (pending || !editing) return;
+    setPending(true);
+    try {
+      const chore = await updateChore(editing.id, input);
+      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
+      setEditing(null);
+      notify("Chore updated");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not update chore");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const addChore = async (input: ChoreInput) => {
     if (pending) return;
     setPending(true);
     try {
@@ -387,7 +427,16 @@ export default function ChoresPage() {
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
         <section className="self-start rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Chore tracking</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold">Chore tracking</h2>
+              <Link
+                href={`${home}?panel=add`}
+                scroll={false}
+                className="rounded-lg bg-[#1c2750] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
+              >
+                Add chore
+              </Link>
+            </div>
             <div role="tablist" aria-label="Filter chores" className="flex rounded-xl bg-[#e9e3f1] p-1">
               {FILTERS.map((f) => (
                 <button
@@ -412,7 +461,7 @@ export default function ChoresPage() {
                   {["Chore", "Points", "Due", "Assignee", "Status"].map((h) => (
                     <th key={h} className="whitespace-nowrap pb-3 pr-2 font-semibold">{h}</th>
                   ))}
-                  <th className="pb-3"><span className="sr-only">Action</span></th>
+                  <th className="pb-3"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -420,9 +469,19 @@ export default function ChoresPage() {
                   const s = STATUS_STYLE[c.status];
                   const mine = c.assigneeId === CURRENT_USER.id;
                   return (
-                    <tr key={c.id} className="border-b border-[#d5cde3] last:border-0">
+                    <tr
+                      key={c.id}
+                      onClick={() => setEditing(c)}
+                      className="cursor-pointer border-b border-[#d5cde3] transition-colors last:border-0 hover:bg-white/50"
+                    >
                       <td className="whitespace-nowrap py-3 pr-2">
-                        <p className="font-semibold">{c.title}</p>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(c)}
+                          className="text-left font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
+                        >
+                          {c.title}
+                        </button>
                       </td>
                       <td className="whitespace-nowrap pr-2">
                         <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
@@ -435,7 +494,9 @@ export default function ChoresPage() {
                           {s.label}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap text-right">
+                      {/* w-px keeps this column as narrow as its buttons, so both sit together on the right. */}
+                      <td className="w-px whitespace-nowrap pl-2" onClick={(event) => event.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
                         {c.status === "available" && (
                           <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
                             Claim
@@ -452,6 +513,27 @@ export default function ChoresPage() {
                         {c.status === "completed" && (
                           <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
                         )}
+                        {confirmId === c.id ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => removeChore(c.id)}
+                            aria-label={`Confirm removing ${c.title}`}
+                            className="rounded-lg border border-[#b3402f] bg-[#b3402f] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#9a3627] disabled:opacity-50"
+                          >
+                            Confirm?
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmId(c.id)}
+                            aria-label={`Remove ${c.title}`}
+                            className="rounded-lg border border-[#d5cde3] bg-white px-3 py-2 text-sm font-semibold text-[#b3402f] transition-colors hover:bg-[#fde8e6]"
+                          >
+                            Remove
+                          </button>
+                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -518,7 +600,17 @@ export default function ChoresPage() {
         </div>
       </div>
 
-      {modalOpen && <AddChoreModal onClose={closeModal} onAdd={addChore} />}
+      {modalOpen && <ChoreModal heading="Add chore" submitLabel="Add chore" pending={pending} onClose={closeModal} onSubmit={addChore} />}
+      {editing && (
+        <ChoreModal
+          heading="Edit chore"
+          submitLabel="Save"
+          initial={{ title: editing.title, detail: editing.detail, points: editing.points, due: editing.due }}
+          pending={pending}
+          onClose={closeEdit}
+          onSubmit={saveEdit}
+        />
+      )}
       {removeOpen && (
         <RemoveChoreModal
           chores={chores}

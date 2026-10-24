@@ -69,11 +69,8 @@ function householdPage(pathname: string) {
   return match ? (match[1] ?? "") : null;
 }
 
-/**
- * Household links point at `groupId`: the one in the URL, or the default one elsewhere.
- * Switching households keeps the current page, e.g. /groups/3/rewards to /groups/7/rewards.
- */
-function buildNav(groups: Group[], groupId: number | null, page: string): NavItem[] {
+/** Household links point at `groupId`: the one in the URL, or the default one elsewhere. */
+function buildNav(groupId: number | null): NavItem[] {
   const home = groupId == null ? "/groups" : householdPath(groupId);
   return [
     {
@@ -81,7 +78,6 @@ function buildNav(groups: Group[], groupId: number | null, page: string): NavIte
       href: "/groups",
       icon: ICONS.groups,
       sub: [
-        ...groups.map((group) => ({ label: group.name, href: householdPath(group.id, page) })),
         ...(groupId == null ? [] : [{ label: "Invite member", href: householdPath(groupId, "/members") }]),
         { label: "Create group", href: "/groups?panel=create" },
         { label: "Join group", href: "/groups?panel=join" },
@@ -102,6 +98,7 @@ function buildNav(groups: Group[], groupId: number | null, page: string): NavIte
     },
     {
       label: "Calendar",
+      href: groupId == null ? "/groups" : householdPath(groupId, "/calendar"),
       icon: ICONS.calendar,
     },
     {
@@ -124,6 +121,7 @@ function itemActive(label: string, pathname: string) {
   const page = householdPage(pathname);
   if (label === "Groups") return pathname === "/groups" || page === "/members";
   if (label === "Chores") return page === "" || page === "/rewards";
+  if (label === "Calendar") return page === "/calendar";
   if (label === "Leaderboard") return page === "/leaderboard";
   return false;
 }
@@ -184,7 +182,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const urlGroupId = Number(params.groupId);
   const navGroupId = groups.some((group) => group.id === urlGroupId) ? urlGroupId : groupsReady ? pickDefaultGroup(groups) : null;
-  const nav = buildNav(groups, navGroupId, householdPage(pathname) ?? "");
+  const nav = buildNav(navGroupId);
+
+  // Switching households keeps the current page, e.g. /groups/3/rewards to /groups/7/rewards.
+  const switchGroup = (groupId: number) => {
+    setMobileOpen(false);
+    router.push(householdPath(groupId, householdPage(pathname) ?? ""));
+  };
 
   return (
     <NotifyContext.Provider value={notify}>
@@ -212,25 +216,53 @@ export function AppShell({ children }: { children: ReactNode }) {
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3.5">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-base font-semibold text-[#1e2d54]">{CURRENT_USER.name.charAt(0)}</div>
-            <div className="min-w-0 flex-1 leading-snug">
-              <p className="truncate text-base font-semibold text-white">{CURRENT_USER.name}</p>
-              <p className="break-all text-sm text-[#b8c0da]">{CURRENT_USER.email}</p>
-            </div>
+          <div className={`flex items-center gap-1 rounded-xl border border-white/10 ${pathname === "/profile" ? "bg-white/10" : "bg-white/5"}`}>
+            <Link
+              href="/profile"
+              aria-label="Open profile"
+              aria-current={pathname === "/profile" ? "page" : undefined}
+              onClick={() => setMobileOpen(false)}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-3.5 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
+            >
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-base font-semibold text-[#1e2d54]">{CURRENT_USER.name.charAt(0)}</div>
+              <div className="min-w-0 flex-1 leading-snug">
+                <p className="truncate text-base font-semibold text-white">{CURRENT_USER.name}</p>
+                <p className="break-all text-sm text-[#b8c0da]">{CURRENT_USER.email}</p>
+              </div>
+            </Link>
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
               aria-expanded={true}
               aria-controls="sidebar"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-xl text-white hover:bg-white/10 md:hidden"
+              className="mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-xl text-white hover:bg-white/10 md:hidden"
             >
               ×
             </button>
           </div>
 
-          <nav className="mt-8 flex flex-col gap-1.5" aria-label="Main">
+          {navGroupId != null && (
+            <div className="mt-4">
+              <label htmlFor="group-switcher" className="mb-1.5 block px-1 text-sm font-medium text-[#b8c0da]">
+                Group
+              </label>
+              <select
+                id="group-switcher"
+                value={navGroupId}
+                onChange={(event) => switchGroup(Number(event.target.value))}
+                className="w-full cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 text-base font-semibold text-white outline-none transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
+              >
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id} className="bg-white text-[#1c2750]">
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <nav className="mt-6 flex flex-col gap-1.5" aria-label="Main">
             {nav.map((item) => {
               const active = itemActive(item.label, pathname);
               const className = `flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0] ${

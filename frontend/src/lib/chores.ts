@@ -9,9 +9,9 @@ import * as groups from "@/lib/api/gen/groups"
 
 import { toChore, toMember } from "./map";
 import { CURRENT_USER } from "./session";
-import type { Chore, CreateChoreInput, Member } from "./types";
+import type { Chore, ChoreInput, CreateChoreInput, Member } from "./types";
 
-export type { Chore, CreateChoreInput, Member, Status } from "./types";
+export type { Chore, ChoreInput, CreateChoreInput, Member, Status } from "./types";
 export { CURRENT_USER } from "./session";
 
 export async function listMembers(groupId: number): Promise<Member[]>
@@ -31,17 +31,26 @@ export async function deleteChore(id: number): Promise<void>
   await chores.deleteChore(id, {user_id: CURRENT_USER.id});
 }
 
-export async function createChore(input: CreateChoreInput): Promise<Chore>
+function choreBody(input: ChoreInput)
 {
   const title = input.title.trim();
-  const detail = input.detail.trim();
   if (!title) throw new Error("Enter a chore title.");
   if (!Number.isInteger(input.points) || input.points < 1) {
     throw new Error("Enter whole points, 1 or more.");
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.due)) throw new Error("Pick a due date.");
+  return { title: title, description: input.detail.trim(), points: input.points, due: input.due };
+}
 
-  const response = await chores.createChore({user_id: CURRENT_USER.id, group_id: input.groupId, title: title, description: detail, points: input.points, due: input.due});
+export async function createChore(input: CreateChoreInput): Promise<Chore>
+{
+  const response = await chores.createChore({user_id: CURRENT_USER.id, group_id: input.groupId, ...choreBody(input)});
+  return toChore(response);
+}
+
+export async function updateChore(id: number, input: ChoreInput): Promise<Chore>
+{
+  const response = await chores.updateChore(id, choreBody(input), {user_id: CURRENT_USER.id});
   return toChore(response);
 }
 
