@@ -16,14 +16,14 @@ import {
 import { CURRENT_GROUP, CURRENT_USER } from "@/lib/session";
 
 const inputClass =
-  "w-full rounded-xl border border-[#d5cde3] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
+  "w-full rounded-xl border border-[#d5cde3] bg-white px-4 py-3 text-base outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
 
 function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">{label}</label>
+      <label htmlFor={id} className="mb-1.5 block text-base font-semibold">{label}</label>
       {children}
-      {error && <p className="mt-1.5 text-sm text-[#b3402f]">{error}</p>}
+      {error && <p className="mt-1.5 text-base text-[#b3402f]">{error}</p>}
     </div>
   );
 }
@@ -98,10 +98,10 @@ function RewardModal({
         </Field>
 
         <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
             Cancel
           </button>
-          <button type="submit" disabled={pending} className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] disabled:opacity-50">
+          <button type="submit" disabled={pending} className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e] disabled:opacity-50">
             {submitLabel}
           </button>
         </div>
@@ -203,11 +203,11 @@ export default function RewardsPage() {
     <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
+          <p className="text-base font-medium text-[#9a7fb0]">Current group</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Rewards</h1>
           <p className="mt-1 text-[#7c6f9c]">{CURRENT_GROUP.name} · spend points, or change what the group can redeem</p>
         </div>
-        <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2 text-sm">
+        <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2.5 text-base">
           Your points: <strong>{points}</strong>
         </span>
       </header>
@@ -221,7 +221,7 @@ export default function RewardsPage() {
               setEditing(null);
               setCreating(true);
             }}
-            className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e]"
+            className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e]"
           >
             Add reward
           </button>
@@ -242,14 +242,14 @@ export default function RewardsPage() {
                 <li key={reward.id} className="flex flex-col gap-3 rounded-2xl bg-[#ebe6f1] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-semibold">{reward.title}</p>
-                    <p className="text-sm text-[#6b6590]">{reward.cost} pts · {reward.scope}</p>
+                    <p className="text-base text-[#6b6590]">{reward.cost} pts · {reward.scope}</p>
                   </div>
                   {confirming ? (
                     <div className="flex shrink-0 gap-2">
                       <button
                         type="button"
                         onClick={() => setConfirmId(null)}
-                        className="rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
                       >
                         Cancel
                       </button>
@@ -257,7 +257,7 @@ export default function RewardsPage() {
                         type="button"
                         disabled={pending}
                         onClick={() => remove(reward.id)}
-                        className="rounded-lg bg-[#b3402f] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                        className="rounded-lg bg-[#b3402f] px-4 py-2.5 text-base font-semibold text-white disabled:opacity-50"
                       >
                         Remove
                       </button>
@@ -269,7 +269,7 @@ export default function RewardsPage() {
                         onClick={() => redeem(reward)}
                         disabled={short || pending}
                         title={short ? `Need ${reward.cost - points} more points` : undefined}
-                        className="rounded-lg bg-[#9a7fb0] px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#8869a0] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-[#9a7fb0] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#8869a0] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Redeem
                       </button>
@@ -279,14 +279,14 @@ export default function RewardsPage() {
                           setCreating(false);
                           setEditing(reward);
                         }}
-                        className="rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmId(reward.id)}
-                        className="rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
                       >
                         Remove
                       </button>

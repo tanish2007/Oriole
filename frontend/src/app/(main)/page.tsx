@@ -27,9 +27,9 @@ const FILTERS = ["All", "Available", "Mine", "Done"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const STATUS_STYLE: Record<Status, { label: string; pill: string; dot: string }> = {
-  available: { label: "Available", pill: "bg-[#ebe6f1] text-[#1c2750]", dot: "bg-[#1c2750]" },
-  in_progress: { label: "In progress", pill: "bg-[#ebe6f1] text-[#9a7fb0]", dot: "bg-[#b79fca]" },
-  completed: { label: "Completed", pill: "bg-[#dcefe3] text-[#2f6b4a]", dot: "bg-[#3f8a62]" },
+  available: { label: "Available", pill: "bg-[#fde8e6] text-[#9f1239]", dot: "bg-[#e11d48]" },
+  in_progress: { label: "In progress", pill: "bg-[#fff4cc] text-[#854d0e]", dot: "bg-[#eab308]" },
+  completed: { label: "Completed", pill: "bg-[#dcfce7] text-[#166534]", dot: "bg-[#16a34a]" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -46,17 +46,17 @@ function assigneeName(assigneeId: number | null, members: Member[]) {
 }
 
 const inputClass =
-  "w-full rounded-xl border border-[#d5cde3] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
+  "w-full rounded-xl border border-[#d5cde3] bg-white px-4 py-3 text-base outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
 
 function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">
+      <label htmlFor={id} className="mb-1.5 block text-base font-semibold">
         {label}
         {optional && <span className="font-normal text-[#6b6590]"> (optional)</span>}
       </label>
       {children}
-      {error && <p className="mt-1.5 text-sm text-[#b3402f]">{error}</p>}
+      {error && <p className="mt-1.5 text-base text-[#b3402f]">{error}</p>}
     </div>
   );
 }
@@ -97,7 +97,7 @@ function RemoveChoreModal({
           Remove chore
         </h2>
         {chores.length === 0 ? (
-          <p className="text-sm text-[#6b6590]">No chores to remove.</p>
+          <p className="text-base text-[#6b6590]">No chores to remove.</p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-y-auto">
             {chores.map((chore) => {
@@ -107,7 +107,7 @@ function RemoveChoreModal({
                 <li key={chore.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{chore.title}</p>
-                    <p className="text-sm text-[#6b6590]">
+                    <p className="text-base text-[#6b6590]">
                       {formatDue(chore.due)}
                       {name ? ` · ${name}` : ""}
                     </p>
@@ -117,7 +117,7 @@ function RemoveChoreModal({
                       <button
                         type="button"
                         onClick={() => setConfirmId(null)}
-                        className="rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
                       >
                         Cancel
                       </button>
@@ -125,7 +125,7 @@ function RemoveChoreModal({
                         type="button"
                         disabled={pending}
                         onClick={() => onRemove(chore.id)}
-                        className="rounded-lg bg-[#b3402f] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                        className="rounded-lg bg-[#b3402f] px-4 py-2.5 text-base font-semibold text-white disabled:opacity-50"
                       >
                         Remove
                       </button>
@@ -134,7 +134,7 @@ function RemoveChoreModal({
                     <button
                       type="button"
                       onClick={() => setConfirmId(chore.id)}
-                      className="shrink-0 rounded-lg border border-[#d5cde3] bg-white px-3 py-1.5 text-sm font-semibold"
+                      className="shrink-0 rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
                     >
                       Remove
                     </button>
@@ -145,7 +145,7 @@ function RemoveChoreModal({
           </ul>
         )}
         <div className="flex justify-end">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
             Close
           </button>
         </div>
@@ -214,10 +214,10 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (chore:
         </div>
 
         <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/60">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
             Cancel
           </button>
-          <button type="submit" className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e]">
+          <button type="submit" className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e]">
             Add chore
           </button>
         </div>
@@ -368,13 +368,13 @@ export default function ChoresPage() {
     <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
+          <p className="text-base font-medium text-[#9a7fb0]">Current group</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">{CURRENT_GROUP.name}</h1>
           <p className="mt-1 text-[#7c6f9c]">
             {ready && !loadError ? `${members.length} members` : ready ? "Members unavailable" : "Loading members"} · You are a member
           </p>
         </div>
-        <div className="flex gap-2 text-sm">
+        <div className="flex gap-2 text-base">
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">Weekly reset: Sunday</span>
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">
             Your points: <strong>{myPoints}</strong>
@@ -382,7 +382,7 @@ export default function ChoresPage() {
         </div>
       </header>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
         <section className="self-start rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Chore tracking</h2>
@@ -393,7 +393,7 @@ export default function ChoresPage() {
                   role="tab"
                   aria-selected={filter === f}
                   onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-1.5 text-[15px] font-medium transition-colors ${
+                  className={`rounded-lg px-4 py-2.5 text-base font-medium transition-colors ${
                     filter === f ? "bg-white shadow-sm" : "text-[#6b6590] hover:text-[#1c2750]"
                   }`}
                 >
@@ -404,11 +404,11 @@ export default function ChoresPage() {
           </div>
 
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left">
+            <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-[#d5cde3] text-sm text-[#6b6590]">
+                <tr className="border-b border-[#d5cde3] text-base text-[#6b6590]">
                   {["Chore", "Points", "Due", "Assignee", "Status"].map((h) => (
-                    <th key={h} className="pb-3 pr-4 font-semibold">{h}</th>
+                    <th key={h} className="whitespace-nowrap pb-3 pr-2 font-semibold">{h}</th>
                   ))}
                   <th className="pb-3"><span className="sr-only">Action</span></th>
                 </tr>
@@ -419,37 +419,36 @@ export default function ChoresPage() {
                   const mine = c.assigneeId === CURRENT_USER.id;
                   return (
                     <tr key={c.id} className="border-b border-[#d5cde3] last:border-0">
-                      <td className="py-4 pr-4">
+                      <td className="whitespace-nowrap py-3 pr-2">
                         <p className="font-semibold">{c.title}</p>
-                        {c.detail && <p className="text-sm text-[#6b6590]">{c.detail}</p>}
                       </td>
-                      <td className="pr-4">
+                      <td className="whitespace-nowrap pr-2">
                         <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
                       </td>
-                      <td className="pr-4 text-[15px]">{formatDue(c.due)}</td>
-                      <td className="pr-4 text-[15px]">{assigneeName(c.assigneeId, members) ?? "—"}</td>
-                      <td className="pr-4">
-                        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${s.pill}`}>
-                          <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                      <td className="whitespace-nowrap pr-2 text-base">{formatDue(c.due)}</td>
+                      <td className="whitespace-nowrap pr-2 text-base">{assigneeName(c.assigneeId, members) ?? "—"}</td>
+                      <td className="whitespace-nowrap pr-2">
+                        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}>
+                          <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
                           {s.label}
                         </span>
                       </td>
-                      <td className="text-right">
+                      <td className="whitespace-nowrap text-right">
                         {c.status === "available" && (
-                          <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+                          <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
                             Claim
                           </button>
                         )}
                         {c.status === "in_progress" && mine && (
-                          <button onClick={() => complete(c.id)} className="rounded-lg bg-[#1c2750] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+                          <button onClick={() => complete(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
                             Complete
                           </button>
                         )}
                         {c.status === "in_progress" && !mine && (
-                          <button disabled className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-medium text-[#a59fbd]">Claimed</button>
+                          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Claimed</button>
                         )}
                         {c.status === "completed" && (
-                          <button disabled className="rounded-lg border border-[#d5cde3] px-4 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
+                          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
                         )}
                       </td>
                     </tr>
@@ -469,26 +468,26 @@ export default function ChoresPage() {
           </div>
         </section>
 
-        <div className="flex flex-col gap-5">
-          <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5">
+        <div className="flex flex-col gap-4">
+          <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">Possible rewards</h2>
+              <h2 className="text-lg font-semibold">Possible rewards</h2>
               <Link href="/rewards" className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]">
                 Manage
               </Link>
             </div>
-            <ul className="mt-4 flex flex-col gap-3">
+            <ul className="mt-3 flex flex-col gap-2">
               {rewards.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] p-3.5">
-                  <div>
-                    <p className="font-semibold leading-snug">{r.title}</p>
+                <li key={r.id} className="flex items-center justify-between gap-2 rounded-xl bg-[#ebe6f1] px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="whitespace-nowrap text-sm font-semibold">{r.title}</p>
                     <p className="text-sm text-[#6b6590]">{r.cost} pts · {r.scope}</p>
                   </div>
                   <button
                     onClick={() => redeem(r)}
                     disabled={myPoints < r.cost}
                     title={myPoints < r.cost ? `Need ${r.cost - myPoints} more points` : undefined}
-                    className="rounded-lg bg-[#9a7fb0] px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#8869a0] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="shrink-0 rounded-lg bg-[#9a7fb0] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#8869a0] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Redeem
                   </button>
@@ -497,19 +496,19 @@ export default function ChoresPage() {
             </ul>
           </section>
 
-          <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5">
+          <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">Points tracker</h2>
+              <h2 className="text-lg font-semibold">Points tracker</h2>
               <Link href="/leaderboard" className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]">
                 Full board
               </Link>
             </div>
-            <ol className="mt-4 flex flex-col gap-3">
+            <ol className="mt-3 flex flex-col gap-2">
               {weekBoard.map((member, index) => (
-                <li key={member.id} className="flex items-center gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">{index + 1}</span>
-                  <span className="flex-1 font-semibold">{member.name}{member.id === CURRENT_USER.id && " (you)"}</span>
-                  <span className="font-semibold text-[#9a7fb0]">{member.points}</span>
+                <li key={member.id} className="flex items-center gap-2.5 rounded-xl bg-[#ebe6f1] px-3 py-2">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">{index + 1}</span>
+                  <span className="min-w-0 flex-1 whitespace-nowrap text-sm font-semibold">{member.name}{member.id === CURRENT_USER.id && " (you)"}</span>
+                  <span className="shrink-0 text-sm font-semibold text-[#9a7fb0]">{member.points}</span>
                 </li>
               ))}
             </ol>

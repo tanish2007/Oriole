@@ -8,12 +8,12 @@ function envNumber(raw: string | undefined, fallback: number) {
 
 export const CURRENT_USER = {
   id: envNumber(process.env.NEXT_PUBLIC_USER_ID, 1),
-  name: process.env.NEXT_PUBLIC_USER_NAME || "Alex Rivera",
-  email: "alex@umass.edu",
+  name: process.env.NEXT_PUBLIC_USER_NAME || "Jennifer Ye",
+  email: "jennifer.ye@umass.edu",
 };
 
 export const CURRENT_GROUP: Group = {
   id: envNumber(process.env.NEXT_PUBLIC_GROUP_ID, 1),
-  name: process.env.NEXT_PUBLIC_GROUP_NAME || "Maple House",
+  name: process.env.NEXT_PUBLIC_GROUP_NAME || "Team Oriole",
   memberCount: 0,
 };

@@ -61,7 +61,7 @@ export default function LeaderboardPage() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-[#9a7fb0]">{CURRENT_GROUP.name}</p>
+          <p className="text-base font-medium text-[#9a7fb0]">{CURRENT_GROUP.name}</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Leaderboard</h1>
           <p className="mt-1 text-[#7c6f9c]">
             {period === "week" ? "Weekly points · resets Sunday" : "Monthly points"}
@@ -75,7 +75,7 @@ export default function LeaderboardPage() {
               role="tab"
               aria-selected={period === item.id}
               onClick={() => selectPeriod(item.id)}
-              className={`rounded-lg px-4 py-1.5 text-[15px] font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2.5 text-base font-medium transition-colors ${
                 period === item.id ? "bg-white shadow-sm" : "text-[#6b6590] hover:text-[#1c2750]"
               }`}
             >
@@ -104,7 +104,7 @@ export default function LeaderboardPage() {
                     you ? "border border-[#d7c6e4] bg-[#f7f1f8]" : "bg-[#ebe6f1]"
                   }`}
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1c2750] text-base font-semibold text-white">
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
