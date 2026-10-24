@@ -11,7 +11,9 @@ import type {
   GroupInviteCodeResponse,
   GroupJoin,
   GroupJoinResponse,
+  GroupSummaryResponse,
   LeaderboardParams,
+  ListGroupsParams,
   ListMembersParams,
   MemberResponse
 } from './schemas';
@@ -39,6 +41,36 @@ export const createGroup = async (groupCreate: GroupCreate, options?: RequestIni
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       groupCreate,)
+  }
+);}
+
+
+/**
+ * @summary List Groups
+ */
+export const getListGroupsUrl = (params: ListGroupsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/groups?${stringifiedParams}` : `http://127.0.0.1:8000/groups`
+}
+
+export const listGroups = async (params: ListGroupsParams, options?: RequestInit): Promise<GroupSummaryResponse[]> => {
+  
+  return apiFetch<GroupSummaryResponse[]>(getListGroupsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 

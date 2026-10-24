@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -34,6 +35,12 @@ class MemberResponse(BaseModel):
     id: int
     name: str
     points: int
+
+class GroupSummaryResponse(BaseModel):
+    id: int
+    name: str
+    role: Literal["owner", "member"]
+    member_count: int
 
 
 @router.post("", status_code=201, response_model=GroupCreateResponse)
@@ -135,3 +142,22 @@ async def leaderboard(group_id: int, user_id: int, period: Literal["week", "mont
     ]
     entries.sort(key=lambda entry: (-entry["points"], entry["name"].lower(), entry["id"]))
     return entries
+
+
+@router.get("", response_model=list[GroupSummaryResponse])
+async def list_groups(user_id: int):
+    client = get_supabase()
+    memberships = client.table("group_members").select("group_id, role").eq("user_id", user_id).execute().data
+    if not memberships:
+        return []
+
+    group_ids = [m["group_id"] for m in memberships]
+    roles = {m["group_id"]: m["role"] for m in memberships}
+    groups = client.table("groups").select("id, name").in_("id", group_ids).execute().data
+    all_members = client.table("group_members").select("group_id").in_("group_id", group_ids).execute().data
+    counts = Counter(m["group_id"] for m in all_members)
+
+    return [
+        {"id": g["id"], "name": g["name"], "role": roles[g["id"]], "member_count": counts[g["id"]]}
+        for g in groups
+    ]
