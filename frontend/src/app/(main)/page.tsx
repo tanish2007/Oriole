@@ -236,6 +236,7 @@ export default function ChoresPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [weekBoard, setWeekBoard] = useState<LeaderboardEntry[]>([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [filter, setFilter] = useState<Filter>("All");
   const modalOpen = panel === "add";
@@ -256,8 +257,11 @@ export default function ChoresPage() {
         setRewards(nextRewards);
         setWeekBoard(nextBoard);
       })
-      .catch(() => {
-        if (!cancelled) notify("Could not load chores");
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "Could not load chores";
+        setLoadError(message);
+        notify(message);
       })
       .finally(() => {
         if (!cancelled) setReady(true);
@@ -282,8 +286,8 @@ export default function ChoresPage() {
       const chore = await claimChore(id);
       setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
       notify("Chore claimed");
-    } catch {
-      notify("Could not claim chore");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not claim chore");
     } finally {
       setPending(false);
     }
@@ -298,8 +302,8 @@ export default function ChoresPage() {
       setMembers((current) => current.map((member) => (member.id === CURRENT_USER.id ? { ...member, points } : member)));
       setWeekBoard(await getLeaderboard(CURRENT_GROUP.id, "week"));
       notify(`Completed. +${chore.points} points`);
-    } catch {
-      notify("Could not complete chore");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not complete chore");
     } finally {
       setPending(false);
     }
@@ -312,8 +316,8 @@ export default function ChoresPage() {
       const member = await redeemReward(CURRENT_GROUP.id, reward.id);
       setMembers((current) => current.map((item) => (item.id === member.id ? member : item)));
       notify(`Redeemed: ${reward.title}`);
-    } catch {
-      notify("Could not redeem reward");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not redeem reward");
     } finally {
       setPending(false);
     }
@@ -326,8 +330,8 @@ export default function ChoresPage() {
       await deleteChore(id);
       setChores((current) => current.filter((chore) => chore.id !== id));
       notify("Chore removed");
-    } catch {
-      notify("Could not remove chore");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not remove chore");
     } finally {
       setPending(false);
     }
@@ -342,8 +346,8 @@ export default function ChoresPage() {
       setFilter("All");
       router.replace("/", { scroll: false });
       notify("Chore added");
-    } catch {
-      notify("Could not add chore");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not add chore");
     } finally {
       setPending(false);
     }
@@ -366,7 +370,9 @@ export default function ChoresPage() {
         <div>
           <p className="text-sm font-medium text-[#9a7fb0]">Current group</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">{CURRENT_GROUP.name}</h1>
-          <p className="mt-1 text-[#7c6f9c]">{CURRENT_GROUP.memberCount} members · You are a member</p>
+          <p className="mt-1 text-[#7c6f9c]">
+            {ready && !loadError ? `${members.length} members` : ready ? "Members unavailable" : "Loading members"} · You are a member
+          </p>
         </div>
         <div className="flex gap-2 text-sm">
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">Weekly reset: Sunday</span>
@@ -454,7 +460,10 @@ export default function ChoresPage() {
             {!ready && (
               <p className="py-10 text-center text-[#6b6590]">Loading chores…</p>
             )}
-            {ready && visible.length === 0 && (
+            {ready && loadError && (
+              <p className="py-10 text-center text-[#b3402f]">{loadError}</p>
+            )}
+            {ready && !loadError && visible.length === 0 && (
               <p className="py-10 text-center text-[#6b6590]">No chores match this filter. Try another tab.</p>
             )}
           </div>

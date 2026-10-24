@@ -115,6 +115,7 @@ export default function RewardsPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [points, setPoints] = useState(0);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Reward | null>(null);
@@ -128,8 +129,11 @@ export default function RewardsPage() {
         setRewards(nextRewards);
         setPoints(members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0);
       })
-      .catch(() => {
-        if (!cancelled) notify("Could not load rewards");
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "Could not load rewards";
+        setLoadError(message);
+        notify(message);
       })
       .finally(() => {
         if (!cancelled) setReady(true);
@@ -224,7 +228,8 @@ export default function RewardsPage() {
         </div>
 
         {!ready && <p className="py-10 text-center text-[#6b6590]">Loading rewards…</p>}
-        {ready && rewards.length === 0 && (
+        {ready && loadError && <p className="py-10 text-center text-[#b3402f]">{loadError}</p>}
+        {ready && !loadError && rewards.length === 0 && (
           <p className="py-10 text-center text-[#6b6590]">No rewards yet. Add one for the group.</p>
         )}
 

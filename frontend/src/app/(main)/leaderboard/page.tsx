@@ -22,16 +22,22 @@ export default function LeaderboardPage() {
   const period = periodFrom(searchParams.get("period"));
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     getLeaderboard(CURRENT_GROUP.id, period)
       .then((next) => {
-        if (!cancelled) setEntries(next);
+        if (cancelled) return;
+        setEntries(next);
+        setLoadError(null);
       })
-      .catch(() => {
-        if (!cancelled) notify("Could not load leaderboard");
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "Could not load leaderboard";
+        setLoadError(message);
+        notify(message);
       })
       .finally(() => {
         if (cancelled) return;
@@ -81,10 +87,12 @@ export default function LeaderboardPage() {
 
       <section className="mt-6 rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
         {!ready && <p className="py-10 text-center text-[#6b6590]">Loading leaderboard…</p>}
-        {ready && entries.length === 0 && (
+        {ready && loadError && loading && <p className="py-10 text-center text-[#6b6590]">Loading leaderboard…</p>}
+        {ready && loadError && !loading && <p className="py-10 text-center text-[#b3402f]">{loadError}</p>}
+        {ready && !loadError && entries.length === 0 && (
           <p className="py-10 text-center text-[#6b6590]">No points for this period yet.</p>
         )}
-        {ready && entries.length > 0 && (
+        {ready && !loadError && entries.length > 0 && (
           <ol className={`flex flex-col gap-3 transition-opacity ${loading ? "opacity-60" : ""}`}>
             {entries.map((entry, index) => {
               const you = entry.id === CURRENT_USER.id;
