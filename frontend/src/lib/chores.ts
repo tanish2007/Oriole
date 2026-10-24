@@ -1,110 +1,30 @@
 /**
- * Stand-in for the chore API. The page should only talk to these functions.
- * Replace the bodies with fetch() when the backend routes exist.
+ * Chore client. Pages should only talk to these functions.
+ * Reward and leaderboard routes live in rewards.ts and leaderboard.ts.
  * Dates stay ISO (YYYY-MM-DD). The UI formats them for display.
  */
 
-export type Status = "available" | "in_progress" | "completed";
+import { request } from "./http";
+import { type ApiChore, type ApiMember, toChore, toMember } from "./map";
+import { routes } from "./routes";
+import { CURRENT_USER } from "./session";
+import type { Chore, CreateChoreInput, Member } from "./types";
 
-export type Member = {
-  id: number;
-  name: string;
-  points: number;
-};
-
-export type Chore = {
-  id: number;
-  groupId: number;
-  title: string;
-  detail: string;
-  points: number;
-  due: string;
-  assigneeId: number | null;
-  status: Status;
-};
-
-export type CreateChoreInput = {
-  groupId: number;
-  title: string;
-  detail: string;
-  points: number;
-  due: string;
-};
-
-export type Reward = {
-  id: number;
-  title: string;
-  cost: number;
-  scope: "Group" | "Personal";
-};
-
-export type Group = {
-  id: number;
-  name: string;
-  memberCount: number;
-};
-
-export const CURRENT_USER = {
-  id: 1,
-  name: "Alex Rivera",
-  email: "alex@umass.edu",
-};
-
-export const CURRENT_GROUP: Group = {
-  id: 1,
-  name: "Maple House",
-  memberCount: 4,
-};
-
-const members: Member[] = [
-  { id: 1, name: "Alex Rivera", points: 42 },
-  { id: 2, name: "Sam Okonkwo", points: 55 },
-  { id: 3, name: "Jordan Lee", points: 38 },
-  { id: 4, name: "Riley Chen", points: 27 },
-];
-
-let nextChoreId = 7;
-
-const chores: Chore[] = [
-  { id: 1, groupId: 1, title: "Kitchen deep clean", detail: "Counters, sink, stove, floors", points: 15, due: "2026-10-12", assigneeId: null, status: "available" },
-  { id: 2, groupId: 1, title: "Take out trash", detail: "Kitchen + bathrooms", points: 5, due: "2026-10-11", assigneeId: 3, status: "in_progress" },
-  { id: 3, groupId: 1, title: "Vacuum living room", detail: "Rugs and under couch", points: 10, due: "2026-10-14", assigneeId: 1, status: "in_progress" },
-  { id: 4, groupId: 1, title: "Grocery run", detail: "Shared list on fridge", points: 12, due: "2026-10-13", assigneeId: null, status: "available" },
-  { id: 5, groupId: 1, title: "Wipe bathrooms", detail: "Sinks, mirrors, counters", points: 10, due: "2026-10-09", assigneeId: 2, status: "completed" },
-  { id: 6, groupId: 1, title: "Laundry fold & put away", detail: "Shared towels only", points: 8, due: "2026-10-16", assigneeId: null, status: "available" },
-];
-
-const rewards: Reward[] = [
-  { id: 1, title: "Pick dinner", cost: 25, scope: "Group" },
-  { id: 2, title: "Skip one chore", cost: 40, scope: "Group" },
-  { id: 3, title: "Choose movie night", cost: 20, scope: "Personal" },
-];
-
-function copyMember(member: Member): Member {
-  return { ...member };
-}
-
-function copyChore(chore: Chore): Chore {
-  return { ...chore };
-}
+export type { Chore, CreateChoreInput, Member, Status } from "./types";
+export { CURRENT_GROUP, CURRENT_USER } from "./session";
 
 export async function listMembers(groupId: number): Promise<Member[]> {
-  if (groupId !== CURRENT_GROUP.id) return [];
-  return members.map(copyMember);
+  const rows = await request<ApiMember[]>(routes.members(groupId, CURRENT_USER.id));
+  return rows.map(toMember);
 }
 
 export async function listChores(groupId: number): Promise<Chore[]> {
-  return chores.filter((chore) => chore.groupId === groupId).map(copyChore);
-}
-
-export async function listRewards(): Promise<Reward[]> {
-  return rewards.map((reward) => ({ ...reward }));
+  const rows = await request<ApiChore[]>(routes.chores(groupId, CURRENT_USER.id));
+  return rows.map(toChore);
 }
 
 export async function deleteChore(id: number): Promise<void> {
-  const index = chores.findIndex((chore) => chore.id === id);
-  if (index < 0) throw new Error("Chore not found.");
-  chores.splice(index, 1);
+  await request<void>(routes.chore(id, CURRENT_USER.id), { method: "DELETE" });
 }
 
 export async function createChore(input: CreateChoreInput): Promise<Chore> {
@@ -115,53 +35,29 @@ export async function createChore(input: CreateChoreInput): Promise<Chore> {
     throw new Error("Enter whole points, 1 or more.");
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.due)) throw new Error("Pick a due date.");
-  if (input.groupId !== CURRENT_GROUP.id) throw new Error("Unknown group.");
 
-  const chore: Chore = {
-    id: nextChoreId,
-    groupId: input.groupId,
-    title,
-    detail,
-    points: input.points,
-    due: input.due,
-    assigneeId: null,
-    status: "available",
-  };
-  nextChoreId += 1;
-  chores.push(chore);
-  return copyChore(chore);
+  const row = await request<ApiChore>("/chores", {
+    method: "POST",
+    body: JSON.stringify({
+      user_id: CURRENT_USER.id,
+      group_id: input.groupId,
+      title,
+      description: detail,
+      points: input.points,
+      due: input.due,
+    }),
+  });
+  return toChore(row);
 }
 
 export async function claimChore(id: number): Promise<Chore> {
-  const chore = chores.find((item) => item.id === id);
-  if (!chore) throw new Error("Chore not found.");
-  if (chore.status !== "available" || chore.assigneeId !== null) {
-    throw new Error("Chore is not available.");
-  }
-  chore.assigneeId = CURRENT_USER.id;
-  chore.status = "in_progress";
-  return copyChore(chore);
+  const row = await request<ApiChore>(routes.claimChore(id, CURRENT_USER.id), { method: "POST" });
+  return toChore(row);
 }
 
 export async function completeChore(id: number): Promise<{ chore: Chore; points: number }> {
-  const chore = chores.find((item) => item.id === id);
-  if (!chore) throw new Error("Chore not found.");
-  if (chore.status !== "in_progress" || chore.assigneeId !== CURRENT_USER.id) {
-    throw new Error("You can't complete this chore.");
-  }
-  const member = members.find((item) => item.id === CURRENT_USER.id);
-  if (!member) throw new Error("Member not found.");
-  chore.status = "completed";
-  member.points += chore.points;
-  return { chore: copyChore(chore), points: member.points };
-}
-
-export async function redeemReward(rewardId: number): Promise<Member> {
-  const reward = rewards.find((item) => item.id === rewardId);
-  if (!reward) throw new Error("Reward not found.");
-  const member = members.find((item) => item.id === CURRENT_USER.id);
-  if (!member) throw new Error("Member not found.");
-  if (member.points < reward.cost) throw new Error("Not enough points.");
-  member.points -= reward.cost;
-  return copyMember(member);
+  const body = await request<{ chore: ApiChore; points: number }>(routes.completeChore(id, CURRENT_USER.id), {
+    method: "POST",
+  });
+  return { chore: toChore(body.chore), points: body.points };
 }
