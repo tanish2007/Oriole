@@ -1,12 +1,12 @@
 /**
  * Reward client. Pages should only talk to these functions.
- * Paths and payload shapes are in routes.ts. Set NEXT_PUBLIC_API_URL to use them.
+ * The API stores name and type. This file maps those to title and scope.
  */
 
-import { liveApiEnabled, request } from "./http";
-import { members, publicMember, publicReward, rewards, takeRewardId } from "./mock-store";
+import { request } from "./http";
+import { type ApiMember, type ApiReward, toApiRewardType, toMember, toReward } from "./map";
 import { routes } from "./routes";
-import { CURRENT_GROUP, CURRENT_USER } from "./session";
+import { CURRENT_USER } from "./session";
 import type { Member, Reward, RewardInput } from "./types";
 
 export type { Reward, RewardInput, RewardScope } from "./types";
@@ -23,60 +23,46 @@ function cleanReward(input: RewardInput): RewardInput {
   return { title, cost: input.cost, scope: input.scope };
 }
 
+function rewardBody(input: RewardInput) {
+  return {
+    name: input.title,
+    cost: input.cost,
+    type: toApiRewardType(input.scope),
+  };
+}
+
 export async function listRewards(groupId: number): Promise<Reward[]> {
-  if (liveApiEnabled()) return request<Reward[]>(routes.rewards(groupId));
-  return rewards.filter((reward) => reward.groupId === groupId).map(publicReward);
+  const rows = await request<ApiReward[]>(routes.rewards(groupId, CURRENT_USER.id));
+  return rows.map(toReward);
 }
 
 export async function createReward(groupId: number, input: RewardInput): Promise<Reward> {
   const cleaned = cleanReward(input);
-  if (liveApiEnabled()) {
-    return request<Reward>(routes.rewards(groupId), {
-      method: "POST",
-      body: JSON.stringify(cleaned),
-    });
-  }
-  if (groupId !== CURRENT_GROUP.id) throw new Error("Unknown group.");
-  const reward = { id: takeRewardId(), groupId, ...cleaned };
-  rewards.push(reward);
-  return publicReward(reward);
+  const row = await request<ApiReward>("/rewards", {
+    method: "POST",
+    body: JSON.stringify({
+      user_id: CURRENT_USER.id,
+      group_id: groupId,
+      ...rewardBody(cleaned),
+    }),
+  });
+  return toReward(row);
 }
 
-export async function updateReward(groupId: number, rewardId: number, input: RewardInput): Promise<Reward> {
+export async function updateReward(_groupId: number, rewardId: number, input: RewardInput): Promise<Reward> {
   const cleaned = cleanReward(input);
-  if (liveApiEnabled()) {
-    return request<Reward>(routes.reward(groupId, rewardId), {
-      method: "PATCH",
-      body: JSON.stringify(cleaned),
-    });
-  }
-  const reward = rewards.find((item) => item.id === rewardId && item.groupId === groupId);
-  if (!reward) throw new Error("Reward not found.");
-  reward.title = cleaned.title;
-  reward.cost = cleaned.cost;
-  reward.scope = cleaned.scope;
-  return publicReward(reward);
+  const row = await request<ApiReward>(routes.reward(rewardId, CURRENT_USER.id), {
+    method: "PATCH",
+    body: JSON.stringify(rewardBody(cleaned)),
+  });
+  return toReward(row);
 }
 
-export async function deleteReward(groupId: number, rewardId: number): Promise<void> {
-  if (liveApiEnabled()) {
-    await request<void>(routes.reward(groupId, rewardId), { method: "DELETE" });
-    return;
-  }
-  const index = rewards.findIndex((item) => item.id === rewardId && item.groupId === groupId);
-  if (index < 0) throw new Error("Reward not found.");
-  rewards.splice(index, 1);
+export async function deleteReward(_groupId: number, rewardId: number): Promise<void> {
+  await request<void>(routes.reward(rewardId, CURRENT_USER.id), { method: "DELETE" });
 }
 
-export async function redeemReward(groupId: number, rewardId: number): Promise<Member> {
-  if (liveApiEnabled()) {
-    return request<Member>(routes.redeem(groupId, rewardId), { method: "POST" });
-  }
-  const reward = rewards.find((item) => item.id === rewardId && item.groupId === groupId);
-  if (!reward) throw new Error("Reward not found.");
-  const member = members.find((item) => item.id === CURRENT_USER.id);
-  if (!member) throw new Error("Member not found.");
-  if (member.points < reward.cost) throw new Error("Not enough points.");
-  member.points -= reward.cost;
-  return publicMember(member);
+export async function redeemReward(_groupId: number, rewardId: number): Promise<Member> {
+  const row = await request<ApiMember>(routes.redeem(rewardId, CURRENT_USER.id), { method: "POST" });
+  return toMember(row);
 }

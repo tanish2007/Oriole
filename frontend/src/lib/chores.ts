@@ -4,29 +4,27 @@
  * Dates stay ISO (YYYY-MM-DD). The UI formats them for display.
  */
 
-import { liveApiEnabled, request } from "./http";
-import { chores, members, publicMember, takeChoreId } from "./mock-store";
+import { request } from "./http";
+import { type ApiChore, type ApiMember, toChore, toMember } from "./map";
 import { routes } from "./routes";
-import { CURRENT_GROUP, CURRENT_USER } from "./session";
+import { CURRENT_USER } from "./session";
 import type { Chore, CreateChoreInput, Member } from "./types";
 
 export type { Chore, CreateChoreInput, Member, Status } from "./types";
 export { CURRENT_GROUP, CURRENT_USER } from "./session";
 
 export async function listMembers(groupId: number): Promise<Member[]> {
-  if (liveApiEnabled()) return request<Member[]>(routes.members(groupId));
-  if (groupId !== CURRENT_GROUP.id) return [];
-  return members.map(publicMember);
+  const rows = await request<ApiMember[]>(routes.members(groupId, CURRENT_USER.id));
+  return rows.map(toMember);
 }
 
 export async function listChores(groupId: number): Promise<Chore[]> {
-  return chores.filter((chore) => chore.groupId === groupId).map((chore) => ({ ...chore }));
+  const rows = await request<ApiChore[]>(routes.chores(groupId, CURRENT_USER.id));
+  return rows.map(toChore);
 }
 
 export async function deleteChore(id: number): Promise<void> {
-  const index = chores.findIndex((chore) => chore.id === id);
-  if (index < 0) throw new Error("Chore not found.");
-  chores.splice(index, 1);
+  await request<void>(routes.chore(id, CURRENT_USER.id), { method: "DELETE" });
 }
 
 export async function createChore(input: CreateChoreInput): Promise<Chore> {
@@ -37,44 +35,29 @@ export async function createChore(input: CreateChoreInput): Promise<Chore> {
     throw new Error("Enter whole points, 1 or more.");
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.due)) throw new Error("Pick a due date.");
-  if (input.groupId !== CURRENT_GROUP.id) throw new Error("Unknown group.");
 
-  const chore: Chore = {
-    id: takeChoreId(),
-    groupId: input.groupId,
-    title,
-    detail,
-    points: input.points,
-    due: input.due,
-    assigneeId: null,
-    status: "available",
-  };
-  chores.push(chore);
-  return { ...chore };
+  const row = await request<ApiChore>("/chores", {
+    method: "POST",
+    body: JSON.stringify({
+      user_id: CURRENT_USER.id,
+      group_id: input.groupId,
+      title,
+      description: detail,
+      points: input.points,
+      due: input.due,
+    }),
+  });
+  return toChore(row);
 }
 
 export async function claimChore(id: number): Promise<Chore> {
-  const chore = chores.find((item) => item.id === id);
-  if (!chore) throw new Error("Chore not found.");
-  if (chore.status !== "available" || chore.assigneeId !== null) {
-    throw new Error("Chore is not available.");
-  }
-  chore.assigneeId = CURRENT_USER.id;
-  chore.status = "in_progress";
-  return { ...chore };
+  const row = await request<ApiChore>(routes.claimChore(id, CURRENT_USER.id), { method: "POST" });
+  return toChore(row);
 }
 
 export async function completeChore(id: number): Promise<{ chore: Chore; points: number }> {
-  const chore = chores.find((item) => item.id === id);
-  if (!chore) throw new Error("Chore not found.");
-  if (chore.status !== "in_progress" || chore.assigneeId !== CURRENT_USER.id) {
-    throw new Error("You can't complete this chore.");
-  }
-  const member = members.find((item) => item.id === CURRENT_USER.id);
-  if (!member) throw new Error("Member not found.");
-  chore.status = "completed";
-  member.points += chore.points;
-  member.weekPoints += chore.points;
-  member.monthPoints += chore.points;
-  return { chore: { ...chore }, points: member.points };
+  const body = await request<{ chore: ApiChore; points: number }>(routes.completeChore(id, CURRENT_USER.id), {
+    method: "POST",
+  });
+  return { chore: toChore(body.chore), points: body.points };
 }

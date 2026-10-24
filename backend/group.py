@@ -1,9 +1,11 @@
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import random
 import string
 
-from db import get_supabase, require_member
+from db import get_supabase, list_group_members, member_name_map, require_member
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -27,6 +29,11 @@ class GroupJoinResponse(BaseModel):
 
 class GroupInviteCodeResponse(BaseModel):
     invite_code: str
+
+class MemberResponse(BaseModel):
+    id: int
+    name: str
+    points: int
 
 
 @router.post("", status_code=201, response_model=GroupCreateResponse)
@@ -91,3 +98,40 @@ async def get_invite_code(group_id: int, user_id: int):
         raise HTTPException(status_code=404, detail="Household not found")
         
     return {"invite_code": group_res.data[0]["invite_code"]}
+
+
+def _members(client, group_id: int) -> list[dict]:
+    rows, _supported = list_group_members(client, group_id)
+    names = member_name_map(client, [row["user_id"] for row in rows])
+    return [
+        {
+            "id": row["user_id"],
+            "name": names.get(row["user_id"]) or f"Member {row['user_id']}",
+            "points": row["points"],
+            "week_points": row["week_points"],
+            "month_points": row["month_points"],
+        }
+        for row in rows
+    ]
+
+
+@router.get("/{group_id}/members", response_model=list[MemberResponse])
+async def list_members(group_id: int, user_id: int):
+    client = get_supabase()
+    require_member(client, group_id, user_id)
+    members = _members(client, group_id)
+    members.sort(key=lambda member: (member["name"].lower(), member["id"]))
+    return [{"id": member["id"], "name": member["name"], "points": member["points"]} for member in members]
+
+
+@router.get("/{group_id}/leaderboard", response_model=list[MemberResponse])
+async def leaderboard(group_id: int, user_id: int, period: Literal["week", "month"]):
+    client = get_supabase()
+    require_member(client, group_id, user_id)
+    key = "month_points" if period == "month" else "week_points"
+    entries = [
+        {"id": member["id"], "name": member["name"], "points": member[key]}
+        for member in _members(client, group_id)
+    ]
+    entries.sort(key=lambda entry: (-entry["points"], entry["name"].lower(), entry["id"]))
+    return entries

@@ -1,23 +1,18 @@
 /**
  * Leaderboard client. Pages should only talk to these functions.
- * The route and the week/month point rules are documented in routes.ts.
+ * Week and month totals are earned points. Redeeming a reward does not change them.
  */
 
-import { liveApiEnabled, request } from "./http";
-import { members } from "./mock-store";
+import { request } from "./http";
+import { type ApiMember, toEntry } from "./map";
 import { routes } from "./routes";
-import { CURRENT_GROUP } from "./session";
+import { CURRENT_USER } from "./session";
 import type { LeaderboardEntry, LeaderboardPeriod } from "./types";
 
 export type { LeaderboardEntry, LeaderboardPeriod } from "./types";
 
 export async function getLeaderboard(groupId: number, period: LeaderboardPeriod): Promise<LeaderboardEntry[]> {
   if (period !== "week" && period !== "month") throw new Error("Unknown period.");
-  if (liveApiEnabled()) return request<LeaderboardEntry[]>(routes.leaderboard(groupId, period));
-  if (groupId !== CURRENT_GROUP.id) return [];
-
-  const key = period === "month" ? "monthPoints" : "weekPoints";
-  return members
-    .map((member) => ({ id: member.id, name: member.name, points: member[key] }))
-    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name) || a.id - b.id);
+  const rows = await request<ApiMember[]>(routes.leaderboard(groupId, CURRENT_USER.id, period));
+  return rows.map(toEntry);
 }

@@ -1,36 +1,21 @@
 import type { LeaderboardPeriod } from "./types";
 
 /**
- * Routes the rewards and leaderboard UI calls. Pages never build these paths.
+ * Paths on the FastAPI app. Pages never build these.
  *
- * Set NEXT_PUBLIC_API_URL to the API origin, with no trailing slash
- * (http://localhost:8000). Until it is set, the stand-in in mock-store.ts is used.
- * JSON is camelCase. The browser calls the API directly, so the API must allow
- * this origin. Add the session cookie or header in http.ts when auth exists.
- *
- * GET    /groups/{groupId}/members
- *          -> { id, name, points }[]
- *          `points` is the spendable balance.
- * GET    /groups/{groupId}/rewards
- * POST   /groups/{groupId}/rewards
- *          body: { title, cost, scope }  scope is "Group" | "Personal"
- *          -> { id, title, cost, scope }
- * PATCH  /groups/{groupId}/rewards/{rewardId}
- *          body: { title, cost, scope }
- * DELETE /groups/{groupId}/rewards/{rewardId}
- * POST   /groups/{groupId}/rewards/{rewardId}/redeem
- *          -> { id, name, points } for the signed-in member
- * GET    /groups/{groupId}/leaderboard?period=week|month
- *          -> { id, name, points }[] sorted highest first
- *          These are earned points. Completing a chore should add that chore's
- *          points to the member balance and to both the week and month totals.
- *          Redeeming does not change the leaderboard.
+ * The browser calls http://localhost:8000 unless NEXT_PUBLIC_API_URL is set.
+ * Every call sends the signed-in user id. The API checks group membership.
+ * JSON from the API is snake_case; map.ts turns it into the UI types.
  */
 export const routes = {
-  members: (groupId: number) => `/groups/${groupId}/members`,
-  rewards: (groupId: number) => `/groups/${groupId}/rewards`,
-  reward: (groupId: number, rewardId: number) => `/groups/${groupId}/rewards/${rewardId}`,
-  redeem: (groupId: number, rewardId: number) => `/groups/${groupId}/rewards/${rewardId}/redeem`,
-  leaderboard: (groupId: number, period: LeaderboardPeriod) =>
-    `/groups/${groupId}/leaderboard?period=${period}`,
+  chores: (groupId: number, userId: number) => `/chores?group_id=${groupId}&user_id=${userId}`,
+  chore: (choreId: number, userId: number) => `/chores/${choreId}?user_id=${userId}`,
+  claimChore: (choreId: number, userId: number) => `/chores/${choreId}/claim?user_id=${userId}`,
+  completeChore: (choreId: number, userId: number) => `/chores/${choreId}/complete?user_id=${userId}`,
+  members: (groupId: number, userId: number) => `/groups/${groupId}/members?user_id=${userId}`,
+  rewards: (groupId: number, userId: number) => `/rewards?group_id=${groupId}&user_id=${userId}`,
+  reward: (rewardId: number, userId: number) => `/rewards/${rewardId}?user_id=${userId}`,
+  redeem: (rewardId: number, userId: number) => `/rewards/${rewardId}/redeem?user_id=${userId}`,
+  leaderboard: (groupId: number, userId: number, period: LeaderboardPeriod) =>
+    `/groups/${groupId}/leaderboard?user_id=${userId}&period=${period}`,
 };
