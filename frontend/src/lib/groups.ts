@@ -1,7 +1,11 @@
 import * as groups from "@/lib/api/gen/groups";
 
+import { toGroup } from "./map";
 import { CURRENT_USER } from "./session";
-import { GroupCreateResponse, GroupInviteCodeResponse, GroupJoinResponse, GroupSummaryResponse } from "./api/gen/schemas";
+import type { Group } from "./types";
+import { GroupCreateResponse, GroupInviteCodeResponse, GroupJoinResponse } from "./api/gen/schemas";
+
+export type { Group } from "./types";
 
 export async function createGroup(name: string):  Promise<GroupCreateResponse>
 {
@@ -27,8 +31,8 @@ export async function getInviteCode(groupId: number): Promise<GroupInviteCodeRes
     return response;
 }
 
-export async function listGroups(): Promise<GroupSummaryResponse[]>
+export async function listGroups(): Promise<Group[]>
 {
     const response = await groups.listGroups({user_id: CURRENT_USER.id});
-    return response;
+    return response.map(toGroup);
 }

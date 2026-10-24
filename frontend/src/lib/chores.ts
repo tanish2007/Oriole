@@ -12,7 +12,7 @@ import { CURRENT_USER } from "./session";
 import type { Chore, CreateChoreInput, Member } from "./types";
 
 export type { Chore, CreateChoreInput, Member, Status } from "./types";
-export { CURRENT_GROUP, CURRENT_USER } from "./session";
+export { CURRENT_USER } from "./session";
 
 export async function listMembers(groupId: number): Promise<Member[]>
 {
