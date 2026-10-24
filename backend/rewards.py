@@ -16,7 +16,16 @@ class RewardCreate(BaseModel):
     type: Literal["individual", "group"]
 
 
-@router.post("", status_code=201)
+class RewardResponse(BaseModel):
+    id: int
+    group_id: int
+    created_by: int
+    name: str
+    cost: int
+    type: Literal["individual", "group"]
+
+
+@router.post("", status_code=201, response_model=RewardResponse)
 async def create_reward(body: RewardCreate):
     client = get_supabase()
     require_member(client, body.group_id, body.user_id)
@@ -37,7 +46,7 @@ async def create_reward(body: RewardCreate):
     return res.data[0]
 
 
-@router.get("/{reward_id}")
+@router.get("/{reward_id}", response_model=RewardResponse)
 async def get_reward(reward_id: int, user_id: int):
     client = get_supabase()
     res = client.table("rewards").select("*").eq("id", reward_id).execute()
@@ -48,7 +57,7 @@ async def get_reward(reward_id: int, user_id: int):
     return reward
 
 
-@router.get("")
+@router.get("", response_model=list[RewardResponse])
 async def list_rewards(group_id: int, user_id: int):
     client = get_supabase()
     require_member(client, group_id, user_id)

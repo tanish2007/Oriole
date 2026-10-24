@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -14,7 +16,18 @@ class ChoreCreate(BaseModel):
     points: int = Field(ge=1)
 
 
-@router.post("", status_code=201)
+class ChoreResponse(BaseModel):
+    id: int
+    group_id: int
+    created_by: int
+    title: str
+    description: str
+    points: int
+    status: str
+    created_at: datetime
+
+
+@router.post("", status_code=201, response_model=ChoreResponse)
 async def create_chore(body: ChoreCreate):
     client = get_supabase()
     require_member(client, body.group_id, body.user_id)
@@ -50,7 +63,7 @@ async def create_chore(body: ChoreCreate):
     return res.data[0]
 
 
-@router.get("/{chore_id}")
+@router.get("/{chore_id}", response_model=ChoreResponse)
 async def get_chore(chore_id: int, user_id: int):
     client = get_supabase()
     res = client.table("chores").select("*").eq("id", chore_id).execute()
@@ -61,7 +74,7 @@ async def get_chore(chore_id: int, user_id: int):
     return chore
 
 
-@router.get("")
+@router.get("", response_model=list[ChoreResponse])
 async def list_chores(group_id: int, user_id: int, status: str | None = None):
     client = get_supabase()
     require_member(client, group_id, user_id)
