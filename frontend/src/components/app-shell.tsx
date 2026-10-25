@@ -1,11 +1,21 @@
 "use client";
 
-import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { Fraunces, Outfit } from "next/font/google";
 import { listGroups, type Group } from "@/lib/groups";
-import { CURRENT_USER, householdPath, pickDefaultGroup } from "@/lib/session";
+import { CURRENT_USER, DEFAULT_USER, householdPath, pickDefaultGroup } from "@/lib/session";
+
+const noSubscribe = () => () => {};
+
+/**
+ * The signed-in user to display. The server renders DEFAULT_USER because it can't see a tab's
+ * ?user= override; React swaps in the tab's user right after hydration without a mismatch.
+ */
+export function useCurrentUser() {
+  return useSyncExternalStore(noSubscribe, () => CURRENT_USER, () => DEFAULT_USER);
+}
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
 const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
@@ -126,19 +136,12 @@ function itemActive(label: string, pathname: string) {
   return false;
 }
 
-function menuFor(pathname: string) {
-  const page = householdPage(pathname);
-  // "/" redirects to a household's chores page.
-  if (pathname === "/" || page === "" || page === "/rewards") return "Chores";
-  if (pathname === "/groups" || page === "/members") return "Groups";
-  return null;
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
+  const user = useCurrentUser();
   const pathname = usePathname();
   const router = useRouter();
   const params = useParams<{ groupId?: string }>();
-  const [openMenu, setOpenMenu] = useState<string | null>(menuFor(pathname));
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
@@ -224,10 +227,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setMobileOpen(false)}
               className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-3.5 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
             >
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-base font-semibold text-[#1e2d54]">{CURRENT_USER.name.charAt(0)}</div>
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-base font-semibold text-[#1e2d54]">{user.name.charAt(0)}</div>
               <div className="min-w-0 flex-1 leading-snug">
-                <p className="truncate text-base font-semibold text-white">{CURRENT_USER.name}</p>
-                <p className="break-all text-sm text-[#b8c0da]">{CURRENT_USER.email}</p>
+                <p className="truncate text-base font-semibold text-white">{user.name}</p>
+                <p className="break-all text-sm text-[#b8c0da]">{user.email}</p>
               </div>
             </Link>
             <button

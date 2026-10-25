@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useGroups } from "@/components/app-shell";
-import { CURRENT_USER, householdPath } from "@/lib/session";
+import { useCurrentUser, useGroups } from "@/components/app-shell";
+import { householdPath } from "@/lib/session";
 
 export default function ProfilePage() {
   const { groups, ready } = useGroups();
+  const user = useCurrentUser();
 
   return (
     <>
@@ -17,22 +18,22 @@ export default function ProfilePage() {
       <section className="mt-6 max-w-2xl rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
         <div className="flex items-center gap-4">
           <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#cdbfe0] text-2xl font-semibold text-[#1e2d54]">
-            {CURRENT_USER.name.charAt(0)}
+            {user.name.charAt(0)}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-semibold">{CURRENT_USER.name}</h2>
-            <p className="break-all text-base text-[#6b6590]">{CURRENT_USER.email}</p>
+            <h2 className="truncate text-xl font-semibold">{user.name}</h2>
+            <p className="break-all text-base text-[#6b6590]">{user.email}</p>
           </div>
         </div>
 
         <dl className="mt-6 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-[#ebe6f1] px-4 py-3">
             <dt className="text-base text-[#6b6590]">Display name</dt>
-            <dd className="font-semibold">{CURRENT_USER.name}</dd>
+            <dd className="font-semibold">{user.name}</dd>
           </div>
           <div className="rounded-2xl bg-[#ebe6f1] px-4 py-3">
             <dt className="text-base text-[#6b6590]">Email</dt>
-            <dd className="break-all font-semibold">{CURRENT_USER.email}</dd>
+            <dd className="break-all font-semibold">{user.email}</dd>
           </div>
         </dl>
 
