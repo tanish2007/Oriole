@@ -126,6 +126,11 @@
   }
   html {
     @apply font-sans;
-    font-size: 112.5%;
+    font-size: 101.25%;
+    overscroll-behavior: none;
+    background-color: #ebe0ea;
+  }
+  body {
+    background-color: transparent;
   }
 }
