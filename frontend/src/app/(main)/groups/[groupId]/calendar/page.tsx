@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useGroup, useNotify } from "@/components/app-shell";
+import { useEffect, useRef, useState } from "react";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { listChores, type Chore, type Status } from "@/lib/chores";
 
 // Same colors as the chores page.
@@ -23,6 +23,8 @@ function toIso(date: Date) {
 export default function CalendarPage() {
   const notify = useNotify();
   const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const [chores, setChores] = useState<Chore[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -35,10 +37,13 @@ export default function CalendarPage() {
     let cancelled = false;
     listChores(group.id)
       .then((next) => {
-        if (!cancelled) setChores(next);
+        if (cancelled) return;
+        loaded.current = true;
+        setLoadError(null);
+        setChores(next);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load chores";
         setLoadError(message);
         notify(message);
@@ -49,7 +54,7 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, group.id]);
+  }, [notify, group.id, refreshTick]);
 
   const year = month.getFullYear();
   const monthIndex = month.getMonth();

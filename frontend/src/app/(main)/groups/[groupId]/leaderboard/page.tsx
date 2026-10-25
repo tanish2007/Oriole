@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useGroup, useNotify } from "@/components/app-shell";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { CURRENT_USER, householdPath } from "@/lib/session";
 import { getLeaderboard, type LeaderboardEntry, type LeaderboardPeriod } from "@/lib/leaderboard";
 
@@ -18,6 +18,8 @@ function periodFrom(value: string | null): LeaderboardPeriod {
 export default function LeaderboardPage() {
   const notify = useNotify();
   const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const period = periodFrom(searchParams.get("period"));
@@ -31,11 +33,12 @@ export default function LeaderboardPage() {
     getLeaderboard(group.id, period)
       .then((next) => {
         if (cancelled) return;
+        loaded.current = true;
         setEntries(next);
         setLoadError(null);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load leaderboard";
         setLoadError(message);
         notify(message);
@@ -48,7 +51,7 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, period, group.id]);
+  }, [notify, period, group.id, refreshTick]);
 
   const max = entries[0]?.points ?? 0;
 

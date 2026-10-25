@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useGroup, useNotify } from "@/components/app-shell";
+import { useEffect, useRef, useState } from "react";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { listMembers, type Member } from "@/lib/chores";
 import { getInviteCode } from "@/lib/groups";
 import { CURRENT_USER } from "@/lib/session";
@@ -9,6 +9,8 @@ import { CURRENT_USER } from "@/lib/session";
 export default function MembersPage() {
   const notify = useNotify();
   const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ready, setReady] = useState(false);
@@ -19,11 +21,13 @@ export default function MembersPage() {
     Promise.all([getInviteCode(group.id), listMembers(group.id)])
       .then(([invite, nextMembers]) => {
         if (cancelled) return;
+        loaded.current = true;
+        setLoadError(null);
         setInviteCode(invite.invite_code);
         setMembers(nextMembers);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load members";
         setLoadError(message);
         notify(message);
@@ -34,7 +38,7 @@ export default function MembersPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, group.id]);
+  }, [notify, group.id, refreshTick]);
 
   const copy = async () => {
     if (!inviteCode) return;

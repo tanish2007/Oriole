@@ -1,9 +1,9 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useGroup, useNotify } from "@/components/app-shell";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import {
   CURRENT_USER,
   type Chore,
@@ -242,6 +242,8 @@ function ChoreModal({
 export default function ChoresPage() {
   const notify = useNotify();
   const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const home = householdPath(group.id);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -267,6 +269,7 @@ export default function ChoresPage() {
   const removeOpen = panel === "remove";
 
   useEffect(() => {
+    if (pending) return;
     let cancelled = false;
     Promise.all([
       listChores(group.id),
@@ -276,13 +279,15 @@ export default function ChoresPage() {
     ])
       .then(([nextChores, nextMembers, nextRewards, nextBoard]) => {
         if (cancelled) return;
+        loaded.current = true;
+        setLoadError(null);
         setChores(nextChores);
         setMembers(nextMembers);
         setRewards(nextRewards);
         setWeekBoard(nextBoard);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load chores";
         setLoadError(message);
         notify(message);
@@ -293,7 +298,7 @@ export default function ChoresPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, group.id]);
+  }, [notify, group.id, refreshTick, pending]);
 
   const closeModal = useCallback(() => {
     router.replace(home, { scroll: false });

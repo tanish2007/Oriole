@@ -43,6 +43,14 @@ export function useGroups() {
   return state;
 }
 
+const REFRESH_MS = 5000;
+
+const RefreshContext = createContext(0);
+
+export function useRefreshTick() {
+  return useContext(RefreshContext);
+}
+
 const ActiveGroupContext = createContext<Group | null>(null);
 
 /** Set by the /groups/[groupId] layout for the household in the URL. */
@@ -147,6 +155,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const toastTimer = useRef<number | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupsReady, setGroupsReady] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -183,6 +192,32 @@ export function AppShell({ children }: { children: ReactNode }) {
     return next;
   }, []);
 
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === "visible") setRefreshTick((tick) => tick + 1);
+    };
+    const timer = window.setInterval(bump, REFRESH_MS);
+    document.addEventListener("visibilitychange", bump);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", bump);
+    };
+  }, []);
+
+  // fall back to the previous household data if a refresh fails
+  useEffect(() => {
+    if (refreshTick === 0) return;
+    let cancelled = false;
+    listGroups()
+      .then((next) => {
+        if (!cancelled) setGroups(next);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
+
   const urlGroupId = Number(params.groupId);
   const navGroupId = groups.some((group) => group.id === urlGroupId) ? urlGroupId : groupsReady ? pickDefaultGroup(groups) : null;
   const nav = buildNav(navGroupId);
@@ -196,6 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NotifyContext.Provider value={notify}>
       <GroupsContext.Provider value={{ groups, ready: groupsReady, refreshGroups }}>
+      <RefreshContext.Provider value={refreshTick}>
       <div className={`${display.variable} ${sans.variable} flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]`}>
         {!mobileOpen && (
           <button
@@ -392,6 +428,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {toast}
         </div>
       </div>
+      </RefreshContext.Provider>
       </GroupsContext.Provider>
     </NotifyContext.Provider>
   );

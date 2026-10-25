@@ -52,7 +52,7 @@ export const CURRENT_USER =
     : {
         id: demoId,
         name: DEMO_USER_NAMES[demoId] ?? `User ${demoId}`,
-        email: `Demo account (?user=${demoId})`,
+        email: `Demo account (user=${demoId})`,
       };
 
 export function householdPath(groupId: number, page = "") {

@@ -1,7 +1,7 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
-import { useGroup, useNotify } from "@/components/app-shell";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { listMembers } from "@/lib/chores";
 import {
   createReward,
@@ -113,6 +113,8 @@ function RewardModal({
 export default function RewardsPage() {
   const notify = useNotify();
   const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [points, setPoints] = useState(0);
   const [ready, setReady] = useState(false);
@@ -123,15 +125,18 @@ export default function RewardsPage() {
   const [confirmId, setConfirmId] = useState<number | null>(null);
 
   useEffect(() => {
+    if (pending) return;
     let cancelled = false;
     Promise.all([listRewards(group.id), listMembers(group.id)])
       .then(([nextRewards, members]) => {
         if (cancelled) return;
+        loaded.current = true;
+        setLoadError(null);
         setRewards(nextRewards);
         setPoints(members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load rewards";
         setLoadError(message);
         notify(message);
@@ -142,7 +147,7 @@ export default function RewardsPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, group.id]);
+  }, [notify, group.id, refreshTick, pending]);
 
   const closeModal = useCallback(() => {
     setCreating(false);
