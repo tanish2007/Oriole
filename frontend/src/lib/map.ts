@@ -1,5 +1,12 @@
 import { CURRENT_USER } from "./session";
-import type { Chore, LeaderboardEntry, Member, Reward, RewardScope, Status } from "./types";
+import type { Chore, Group, LeaderboardEntry, Member, Reward, RewardScope, Status } from "./types";
+
+export type ApiGroup = {
+  id: number;
+  name: string;
+  role: string;
+  member_count: number;
+};
 
 export type ApiChore = {
   id: number;
@@ -68,4 +75,13 @@ export function toMember(row: ApiMember): Member {
 export function toEntry(row: ApiMember): LeaderboardEntry {
   const member = toMember(row);
   return { id: member.id, name: member.name, points: member.points };
+}
+
+export function toGroup(row: ApiGroup): Group {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role === "owner" ? "owner" : "member",
+    memberCount: row.member_count,
+  };
 }

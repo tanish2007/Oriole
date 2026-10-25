@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useNotify } from "@/components/app-shell";
-import { CURRENT_GROUP, CURRENT_USER } from "@/lib/session";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
+import { CURRENT_USER, householdPath } from "@/lib/session";
 import { getLeaderboard, type LeaderboardEntry, type LeaderboardPeriod } from "@/lib/leaderboard";
 
 const PERIODS: { id: LeaderboardPeriod; label: string }[] = [
@@ -17,6 +17,9 @@ function periodFrom(value: string | null): LeaderboardPeriod {
 
 export default function LeaderboardPage() {
   const notify = useNotify();
+  const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const period = periodFrom(searchParams.get("period"));
@@ -27,14 +30,15 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getLeaderboard(CURRENT_GROUP.id, period)
+    getLeaderboard(group.id, period)
       .then((next) => {
         if (cancelled) return;
+        loaded.current = true;
         setEntries(next);
         setLoadError(null);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load leaderboard";
         setLoadError(message);
         notify(message);
@@ -47,21 +51,22 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify, period]);
+  }, [notify, period, group.id, refreshTick]);
 
   const max = entries[0]?.points ?? 0;
 
   const selectPeriod = (next: LeaderboardPeriod) => {
     if (next === period) return;
     setLoading(true);
-    router.replace(next === "month" ? "/leaderboard?period=month" : "/leaderboard", { scroll: false });
+    const path = householdPath(group.id, "/leaderboard");
+    router.replace(next === "month" ? `${path}?period=month` : path, { scroll: false });
   };
 
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-base font-medium text-[#9a7fb0]">{CURRENT_GROUP.name}</p>
+          <p className="text-base font-medium text-[#9a7fb0]">{group.name}</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Leaderboard</h1>
           <p className="mt-1 text-[#7c6f9c]">
             {period === "week" ? "Weekly points · resets Sunday" : "Monthly points"}

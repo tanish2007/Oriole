@@ -1,7 +1,7 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
-import { useNotify } from "@/components/app-shell";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { listMembers } from "@/lib/chores";
 import {
   createReward,
@@ -13,7 +13,7 @@ import {
   type RewardInput,
   type RewardScope,
 } from "@/lib/rewards";
-import { CURRENT_GROUP, CURRENT_USER } from "@/lib/session";
+import { CURRENT_USER } from "@/lib/session";
 
 const inputClass =
   "w-full rounded-xl border border-[#d5cde3] bg-white px-4 py-3 text-base outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
@@ -112,6 +112,9 @@ function RewardModal({
 
 export default function RewardsPage() {
   const notify = useNotify();
+  const group = useGroup();
+  const refreshTick = useRefreshTick();
+  const loaded = useRef(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [points, setPoints] = useState(0);
   const [ready, setReady] = useState(false);
@@ -122,15 +125,18 @@ export default function RewardsPage() {
   const [confirmId, setConfirmId] = useState<number | null>(null);
 
   useEffect(() => {
+    if (pending) return;
     let cancelled = false;
-    Promise.all([listRewards(CURRENT_GROUP.id), listMembers(CURRENT_GROUP.id)])
+    Promise.all([listRewards(group.id), listMembers(group.id)])
       .then(([nextRewards, members]) => {
         if (cancelled) return;
+        loaded.current = true;
+        setLoadError(null);
         setRewards(nextRewards);
         setPoints(members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0);
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (cancelled || loaded.current) return;
         const message = error instanceof Error ? error.message : "Could not load rewards";
         setLoadError(message);
         notify(message);
@@ -141,7 +147,7 @@ export default function RewardsPage() {
     return () => {
       cancelled = true;
     };
-  }, [notify]);
+  }, [notify, group.id, refreshTick, pending]);
 
   const closeModal = useCallback(() => {
     setCreating(false);
@@ -153,12 +159,12 @@ export default function RewardsPage() {
     setPending(true);
     try {
       if (editing) {
-        const reward = await updateReward(CURRENT_GROUP.id, editing.id, input);
+        const reward = await updateReward(group.id, editing.id, input);
         setRewards((current) => current.map((item) => (item.id === reward.id ? reward : item)));
         setEditing(null);
         notify("Reward updated");
       } else {
-        const reward = await createReward(CURRENT_GROUP.id, input);
+        const reward = await createReward(group.id, input);
         setRewards((current) => [...current, reward]);
         setCreating(false);
         notify("Reward added");
@@ -174,7 +180,7 @@ export default function RewardsPage() {
     if (pending) return;
     setPending(true);
     try {
-      await deleteReward(CURRENT_GROUP.id, id);
+      await deleteReward(group.id, id);
       setRewards((current) => current.filter((reward) => reward.id !== id));
       setConfirmId(null);
       notify("Reward removed");
@@ -189,7 +195,7 @@ export default function RewardsPage() {
     if (pending || points < reward.cost) return;
     setPending(true);
     try {
-      const member = await redeemReward(CURRENT_GROUP.id, reward.id);
+      const member = await redeemReward(group.id, reward.id);
       setPoints(member.points);
       notify(`Redeemed: ${reward.title}`);
     } catch (error) {
@@ -205,7 +211,7 @@ export default function RewardsPage() {
         <div>
           <p className="text-base font-medium text-[#9a7fb0]">Current group</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Rewards</h1>
-          <p className="mt-1 text-[#7c6f9c]">{CURRENT_GROUP.name} · spend points, or change what the group can redeem</p>
+          <p className="mt-1 text-[#7c6f9c]">{group.name} · spend points, or change what the group can redeem</p>
         </div>
         <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2.5 text-base">
           Your points: <strong>{points}</strong>

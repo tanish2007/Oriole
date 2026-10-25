@@ -18,12 +18,16 @@ export type Chore = {
   status: Status;
 };
 
-export type CreateChoreInput = {
-  groupId: number;
+/** The fields a chore form edits. */
+export type ChoreInput = {
   title: string;
   detail: string;
   points: number;
   due: string;
+};
+
+export type CreateChoreInput = ChoreInput & {
+  groupId: number;
 };
 
 export type RewardScope = "Group" | "Personal";
@@ -41,9 +45,14 @@ export type RewardInput = {
   scope: RewardScope;
 };
 
+export type GroupRole = "owner" | "member";
+
+/** A household the signed-in user belongs to. */
 export type Group = {
   id: number;
   name: string;
+  /** The signed-in user's role in this household. */
+  role: GroupRole;
   memberCount: number;
 };
 

@@ -18,6 +18,13 @@ class ChoreCreate(BaseModel):
     due: str | None = None
 
 
+class ChoreUpdate(BaseModel):
+    title: str = Field(min_length=1, max_length=100)
+    description: str = ""
+    points: int = Field(ge=1)
+    due: str | None = None
+
+
 class ChoreResponse(BaseModel):
     id: int
     group_id: int
@@ -55,27 +62,41 @@ def insert_chore(client, row: dict):
         return client.table("chores").insert(slim).execute()
 
 
-@router.post("", status_code=201, response_model=ChoreResponse)
-async def create_chore(body: ChoreCreate):
-    client = get_supabase()
-    require_member(client, body.group_id, body.user_id)
+def update_chore_row(client, chore_id: int, fields: dict):
+    try:
+        return client.table("chores").update(fields).eq("id", chore_id).execute()
+    except Exception as exc:
+        if not missing_column(exc) or "due" not in fields:
+            raise
+        slim = {key: value for key, value in fields.items() if key != "due"}
+        return client.table("chores").update(slim).eq("id", chore_id).execute()
 
-    if body.due is not None and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", body.due):
+
+def check_chore_fields(client, group_id: int, points: int, due: str | None) -> None:
+    """Due dates are YYYY-MM-DD, and points stay within the group's limit."""
+    if due is not None and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", due):
         raise HTTPException(status_code=400, detail="Pick a due date.")
 
     group = (
         client.table("groups")
         .select("max_chore_points")
-        .eq("id", body.group_id)
+        .eq("id", group_id)
         .single()
         .execute()
     )
     max_points = group.data["max_chore_points"]
-    if max_points is not None and body.points > max_points:
+    if max_points is not None and points > max_points:
         raise HTTPException(
             status_code=400,
             detail=f"Points cannot exceed the group limit of {max_points}",
         )
+
+
+@router.post("", status_code=201, response_model=ChoreResponse)
+async def create_chore(body: ChoreCreate):
+    client = get_supabase()
+    require_member(client, body.group_id, body.user_id)
+    check_chore_fields(client, body.group_id, body.points, body.due)
 
     row = {
         "group_id": body.group_id,
@@ -95,6 +116,21 @@ async def create_chore(body: ChoreCreate):
 async def get_chore(chore_id: int, user_id: int):
     client = get_supabase()
     return load_chore(client, chore_id, user_id)
+
+
+@router.patch("/{chore_id}", response_model=ChoreResponse)
+async def update_chore(chore_id: int, body: ChoreUpdate, user_id: int):
+    client = get_supabase()
+    chore = load_chore(client, chore_id, user_id)
+    check_chore_fields(client, chore["group_id"], body.points, body.due)
+
+    fields = {"title": body.title, "description": body.description, "points": body.points}
+    if body.due is not None:
+        fields["due"] = body.due
+    res = update_chore_row(client, chore_id, fields)
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Chore not found")
+    return res.data[0]
 
 
 @router.delete("/{chore_id}", status_code=204)
