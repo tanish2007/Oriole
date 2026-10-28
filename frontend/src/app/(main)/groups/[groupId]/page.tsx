@@ -133,7 +133,7 @@ function RemoveChoreModal({
                     <button
                       type="button"
                       onClick={() => setConfirmId(chore.id)}
-                      className="shrink-0 rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
+                      className="shrink-0 rounded-lg bg-[#b3402f] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#9a3627]"
                     >
                       Remove
                     </button>
@@ -411,6 +411,50 @@ export default function ChoresPage() {
     [chores, filter],
   );
 
+  const choreActions = (c: Chore) => {
+    const mine = c.assigneeId === CURRENT_USER.id;
+    return (
+      <>
+        {c.status === "available" && (
+          <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+            Claim
+          </button>
+        )}
+        {c.status === "in_progress" && mine && (
+          <button onClick={() => complete(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+            Complete
+          </button>
+        )}
+        {c.status === "in_progress" && !mine && (
+          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Claimed</button>
+        )}
+        {c.status === "completed" && (
+          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
+        )}
+        {confirmId === c.id ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => removeChore(c.id)}
+            aria-label={`Confirm removing ${c.title}`}
+            className="rounded-lg border border-[#b3402f] bg-[#b3402f] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#9a3627] disabled:opacity-50"
+          >
+            Confirm?
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmId(c.id)}
+            aria-label={`Remove ${c.title}`}
+            className="rounded-lg border border-[#b3402f] bg-[#b3402f] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#9a3627]"
+          >
+            Remove
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
     <>
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -421,7 +465,7 @@ export default function ChoresPage() {
             {ready && !loadError ? `${members.length} members` : ready ? "Members unavailable" : "Loading members"} · You are {group.role === "owner" ? "the owner" : "a member"}
           </p>
         </div>
-        <div className="flex gap-2 text-base">
+        <div className="flex flex-wrap gap-2 text-base">
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">Weekly reset: Sunday</span>
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">
             Your points: <strong>{myPoints}</strong>
@@ -430,7 +474,7 @@ export default function ChoresPage() {
       </header>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
-        <section className="self-start rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
+        <section className="@container self-start rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold">Chore tracking</h2>
@@ -442,14 +486,14 @@ export default function ChoresPage() {
                 Add chore
               </Link>
             </div>
-            <div role="tablist" aria-label="Filter chores" className="flex rounded-xl bg-[#e9e3f1] p-1">
+            <div role="tablist" aria-label="Filter chores" className="flex w-full rounded-xl bg-[#e9e3f1] p-1 sm:w-auto">
               {FILTERS.map((f) => (
                 <button
                   key={f}
                   role="tab"
                   aria-selected={filter === f}
                   onClick={() => setFilter(f)}
-                  className={`rounded-lg px-4 py-2.5 text-base font-medium transition-colors ${
+                  className={`flex-1 rounded-lg px-2 py-2.5 text-base font-medium transition-colors sm:flex-none sm:px-4 ${
                     filter === f ? "bg-white shadow-sm" : "text-[#6b6590] hover:text-[#1c2750]"
                   }`}
                 >
@@ -459,7 +503,46 @@ export default function ChoresPage() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto">
+          {/* Narrow section: one full-width card per chore instead of a table that would scroll sideways. */}
+          <ul className="mt-5 flex flex-col @3xl:hidden">
+            {visible.map((c) => {
+              const s = STATUS_STYLE[c.status];
+              return (
+                <li
+                  key={c.id}
+                  onClick={() => setEditing(c)}
+                  className="cursor-pointer border-b border-[#d5cde3] py-3 transition-colors last:border-0 hover:bg-white/50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditing(c);
+                      }}
+                      className="min-w-0 break-words text-left font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
+                    >
+                      {c.title}
+                    </button>
+                    <span className="inline-grid h-8 min-w-10 shrink-0 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-[#6b6590]">
+                    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}>
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
+                      {s.label}
+                    </span>
+                    <span>Due {formatDue(c.due)}</span>
+                    <span>{assigneeName(c.assigneeId, members) ?? "Unassigned"}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                    {choreActions(c)}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-5 hidden overflow-x-auto @3xl:block">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-[#d5cde3] text-base text-[#6b6590]">
@@ -472,7 +555,6 @@ export default function ChoresPage() {
               <tbody>
                 {visible.map((c) => {
                   const s = STATUS_STYLE[c.status];
-                  const mine = c.assigneeId === CURRENT_USER.id;
                   return (
                     <tr
                       key={c.id}
@@ -501,50 +583,15 @@ export default function ChoresPage() {
                       </td>
                       {/* w-px keeps this column as narrow as its buttons, so both sit together on the right. */}
                       <td className="w-px whitespace-nowrap pl-2" onClick={(event) => event.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">
-                        {c.status === "available" && (
-                          <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
-                            Claim
-                          </button>
-                        )}
-                        {c.status === "in_progress" && mine && (
-                          <button onClick={() => complete(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
-                            Complete
-                          </button>
-                        )}
-                        {c.status === "in_progress" && !mine && (
-                          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Claimed</button>
-                        )}
-                        {c.status === "completed" && (
-                          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
-                        )}
-                        {confirmId === c.id ? (
-                          <button
-                            type="button"
-                            disabled={pending}
-                            onClick={() => removeChore(c.id)}
-                            aria-label={`Confirm removing ${c.title}`}
-                            className="rounded-lg border border-[#b3402f] bg-[#b3402f] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#9a3627] disabled:opacity-50"
-                          >
-                            Confirm?
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmId(c.id)}
-                            aria-label={`Remove ${c.title}`}
-                            className="rounded-lg border border-[#d5cde3] bg-white px-3 py-2 text-sm font-semibold text-[#b3402f] transition-colors hover:bg-[#fde8e6]"
-                          >
-                            Remove
-                          </button>
-                        )}
-                        </div>
+                        <div className="flex items-center justify-end gap-2">{choreActions(c)}</div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+          <div>
             {!ready && (
               <p className="py-10 text-center text-[#6b6590]">Loading chores…</p>
             )}
