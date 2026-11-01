@@ -3,7 +3,6 @@
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { Fraunces, Outfit } from "next/font/google";
 import { listGroups, type Group } from "@/lib/groups";
 import { CURRENT_USER, DEFAULT_USER, householdPath, pickDefaultGroup } from "@/lib/session";
 
@@ -16,9 +15,6 @@ const noSubscribe = () => () => {};
 export function useCurrentUser() {
   return useSyncExternalStore(noSubscribe, () => CURRENT_USER, () => DEFAULT_USER);
 }
-
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
-const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 
 const NotifyContext = createContext<((message: string) => void) | null>(null);
 
@@ -232,7 +228,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <NotifyContext.Provider value={notify}>
       <GroupsContext.Provider value={{ groups, ready: groupsReady, refreshGroups }}>
       <RefreshContext.Provider value={refreshTick}>
-      <div className={`${display.variable} ${sans.variable} flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]`}>
+      <div className="flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]">
         {!mobileOpen && (
           <button
             type="button"

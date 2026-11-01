@@ -103,7 +103,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           >
             <span className="absolute inset-3.5 rounded-lg border-2 border-b-[6px] border-white/85" />
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight">ChoreShare</h1>
+          <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">ChoreShare</h1>
           <p className="mt-1 text-[#6b6590]">Make shared chores fair — and a little more fun.</p>
         </div>
 
