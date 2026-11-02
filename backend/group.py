@@ -43,7 +43,7 @@ class GroupSummaryResponse(BaseModel):
 
 
 @router.post("", status_code=201, response_model=GroupCreateResponse)
-async def create_group(group: GroupCreate, user_id: int = Depends(current_user_id)):
+def create_group(group: GroupCreate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     
@@ -70,7 +70,7 @@ async def create_group(group: GroupCreate, user_id: int = Depends(current_user_i
     return {"message": f"Household '{group.name}' created", "invite_code": code, "group_id": new_group_id}
 
 @router.post("/join", response_model=GroupJoinResponse)
-async def join_group(join_request: GroupJoin, user_id: int = Depends(current_user_id)):
+def join_group(join_request: GroupJoin, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     group_res = client.table("groups").select("id").eq("invite_code", join_request.invite_code).execute()
 
@@ -94,7 +94,7 @@ async def join_group(join_request: GroupJoin, user_id: int = Depends(current_use
     return {"message": "Successfully joined the household", "group_id": group_id}
 
 @router.get("/get_invite_code", response_model=GroupInviteCodeResponse)
-async def get_invite_code(group_id: int, user_id: int = Depends(current_user_id)):
+def get_invite_code(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
         
@@ -122,7 +122,7 @@ def _members(client, group_id: int) -> list[dict]:
 
 
 @router.get("/{group_id}/members", response_model=list[MemberResponse])
-async def list_members(group_id: int, user_id: int = Depends(current_user_id)):
+def list_members(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     members = _members(client, group_id)
@@ -131,7 +131,7 @@ async def list_members(group_id: int, user_id: int = Depends(current_user_id)):
 
 
 @router.get("/{group_id}/leaderboard", response_model=list[MemberResponse])
-async def leaderboard(group_id: int, period: Literal["week", "month"], user_id: int = Depends(current_user_id)):
+def leaderboard(group_id: int, period: Literal["week", "month"], user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     key = "month_points" if period == "month" else "week_points"
@@ -144,7 +144,7 @@ async def leaderboard(group_id: int, period: Literal["week", "month"], user_id: 
 
 
 @router.get("", response_model=list[GroupSummaryResponse])
-async def list_groups(user_id: int = Depends(current_user_id)):
+def list_groups(user_id: int = Depends(current_user_id)):
     client = get_supabase()
     memberships = client.table("group_members").select("group_id, role").eq("user_id", user_id).execute().data
     if not memberships:

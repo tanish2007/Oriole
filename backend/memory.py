@@ -231,6 +231,5 @@ def demo_client() -> DemoClient:
             {"id": 2, "group_id": 1, "created_by": 1, "name": "Movie night pick", "cost": 60, "type": "group"},
             {"id": 3, "group_id": 1, "created_by": 2, "name": "Skip one dish night", "cost": 15, "type": "individual"},
         ],
-        "profiles": [],
     }
     return DemoClient(deepcopy(tables))

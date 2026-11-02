@@ -47,7 +47,7 @@ def load_reward(client, reward_id: int, user_id: int) -> dict:
 
 
 @router.post("", status_code=201, response_model=RewardResponse)
-async def create_reward(body: RewardCreate, user_id: int = Depends(current_user_id)):
+def create_reward(body: RewardCreate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, body.group_id, user_id)
 
@@ -68,13 +68,13 @@ async def create_reward(body: RewardCreate, user_id: int = Depends(current_user_
 
 
 @router.get("/{reward_id}", response_model=RewardResponse)
-async def get_reward(reward_id: int, user_id: int = Depends(current_user_id)):
+def get_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     return load_reward(client, reward_id, user_id)
 
 
 @router.patch("/{reward_id}", response_model=RewardResponse)
-async def update_reward(reward_id: int, body: RewardUpdate, user_id: int = Depends(current_user_id)):
+def update_reward(reward_id: int, body: RewardUpdate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     load_reward(client, reward_id, user_id)
     res = (
@@ -89,14 +89,14 @@ async def update_reward(reward_id: int, body: RewardUpdate, user_id: int = Depen
 
 
 @router.delete("/{reward_id}", status_code=204)
-async def delete_reward(reward_id: int, user_id: int = Depends(current_user_id)):
+def delete_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     load_reward(client, reward_id, user_id)
     client.table("rewards").delete().eq("id", reward_id).execute()
 
 
 @router.post("/{reward_id}/redeem", response_model=MemberPoints)
-async def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id)):
+def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     reward = load_reward(client, reward_id, user_id)
     rows, supported = list_group_members(client, reward["group_id"])
@@ -117,7 +117,7 @@ async def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id))
 
 
 @router.get("", response_model=list[RewardResponse])
-async def list_rewards(group_id: int, user_id: int = Depends(current_user_id)):
+def list_rewards(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     return client.table("rewards").select("*").eq("group_id", group_id).execute().data
