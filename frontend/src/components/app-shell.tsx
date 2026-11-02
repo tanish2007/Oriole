@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { listGroups, type Group } from "@/lib/groups";
 import { CURRENT_USER, DEFAULT_USER, householdPath, pickDefaultGroup } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
 
 const noSubscribe = () => () => {};
 
@@ -140,7 +141,21 @@ function itemActive(label: string, pathname: string) {
   return false;
 }
 
+// prevents the main pages from rendering before the user is logged in
 export function AppShell({ children }: { children: ReactNode }) {
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setSignedIn(true);
+      else window.location.replace("/login");
+    });
+  }, []);
+
+  return signedIn ? <SignedInShell>{children}</SignedInShell> : null;
+}
+
+function SignedInShell({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
   const pathname = usePathname();
   const router = useRouter();
