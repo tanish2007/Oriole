@@ -38,6 +38,20 @@ function demoUserId(): number | null {
 
 const demoId = demoUserId();
 
+/** The person who signed in with Google, remembered by the /auth/callback page. Null when signed out. */
+function signedInUser(): { id: number; name: string; email: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("choreshareUser");
+    if (!raw) return null;
+    const user = JSON.parse(raw) as { id?: unknown; name?: unknown; email?: unknown };
+    if (typeof user.id !== "number" || !Number.isInteger(user.id) || user.id < 1) return null;
+    return { id: user.id, name: String(user.name ?? ""), email: String(user.email ?? "") };
+  } catch {
+    return null;
+  }
+}
+
 /** The user from the env. The server always renders this one, since it can't see a tab's ?user=. */
 export const DEFAULT_USER = {
   id: ENV_USER_ID,
@@ -45,10 +59,13 @@ export const DEFAULT_USER = {
   email: "jennifer.ye@umass.edu",
 };
 
+/** Signed-in Google user if there is one, otherwise the env user. */
+const BASE_USER = signedInUser() ?? DEFAULT_USER;
+
 /** For API calls. To show the user's name or email, use useCurrentUser() from app-shell instead. */
 export const CURRENT_USER =
-  demoId == null || demoId === ENV_USER_ID
-    ? DEFAULT_USER
+  demoId == null || demoId === BASE_USER.id
+    ? BASE_USER
     : {
         id: demoId,
         name: DEMO_USER_NAMES[demoId] ?? `User ${demoId}`,

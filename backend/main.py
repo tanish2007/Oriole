@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import chores
 import rewards
 import group
+import auth
 
 
 app = FastAPI(generate_unique_id_function=lambda route: route.name)
@@ -12,6 +13,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allo
 app.include_router(chores.router)
 app.include_router(rewards.router)
 app.include_router(group.router)
+app.include_router(auth.router)
 
 @app.get("/")
 async def root():
