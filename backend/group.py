@@ -80,7 +80,7 @@ async def join_group(join_request: GroupJoin):
 
     group_id = group_res.data[0]["id"]
 
-    existing_member = client.table("group_members").select("id").eq("group_id", group_id).eq("user_id", join_request.user_id).execute()
+    existing_member = client.table("group_members").select("user_id").eq("group_id", group_id).eq("user_id", join_request.user_id).execute()
 
     if existing_member.data:
          raise HTTPException(status_code=400, detail="User is already in this household")

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCurrentUser, useGroups } from "@/components/app-shell";
+import { signOut } from "@/lib/auth";
 import { householdPath } from "@/lib/session";
 
 export default function ProfilePage() {
@@ -60,6 +61,13 @@ export default function ProfilePage() {
           </ul>
         )}
 
+        <button
+          type="button"
+          onClick={() => void signOut().finally(() => window.location.assign("/login"))}
+          className="mt-6 rounded-xl border border-[#d5cde3] bg-white px-4 py-2 text-base font-semibold hover:bg-[#ebe6f1]"
+        >
+          Sign out
+        </button>
       </section>
     </>
   );

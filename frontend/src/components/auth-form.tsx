@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent, type InputHTMLAttributes } from "react";
 import { Button } from "@/components/ui/button";
+import { signInWithGoogle } from "@/lib/auth";
 
 type Mode = "login" | "signup";
 type Values = { name: string; email: string; password: string; confirm: string };
@@ -20,9 +21,8 @@ async function submitAuth(mode: Mode, values: Values): Promise<void> {
   void values;
 }
 
-/** TODO (backend): start Google sign-in. Set SHOW_GOOGLE to false to hide the button. */
+/** Set SHOW_GOOGLE to false to hide the button. */
 const SHOW_GOOGLE = true;
-async function startGoogleSignIn(): Promise<void> {}
 
 function validate(mode: Mode, v: Values): Errors {
   const errors: Errors = {};
@@ -75,6 +75,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setErrors((er) => ({ ...er, [key]: undefined }));
   };
 
+  async function onGoogle() {
+    setFormError(null);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Could not start Google sign-in.");
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const found = validate(mode, values);
@@ -116,7 +125,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 type="button"
                 variant="outline"
                 className="h-11 w-full rounded-xl bg-white text-[15px]"
-                onClick={() => void startGoogleSignIn()}
+                onClick={() => void onGoogle()}
               >
                 Continue with Google
               </Button>
