@@ -10,8 +10,8 @@ import { supabase } from "@/lib/supabase";
 const noSubscribe = () => () => {};
 
 /**
- * The signed-in user to display. The server renders DEFAULT_USER because it can't see a tab's
- * ?user= override; React swaps in the tab's user right after hydration without a mismatch.
+ * The signed-in user to display. The server renders DEFAULT_USER because it can't see the browser's
+ * sign-in; React swaps in the signed-in user right after hydration without a mismatch.
  */
 export function useCurrentUser() {
   return useSyncExternalStore(noSubscribe, () => CURRENT_USER, () => DEFAULT_USER);
