@@ -7,7 +7,6 @@
 import type { ChoreCreateDue } from './choreCreateDue';
 
 export interface ChoreCreate {
-  user_id: number;
   group_id: number;
   /**
    * @minLength 1

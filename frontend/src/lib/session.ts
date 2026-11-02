@@ -60,11 +60,12 @@ export const DEFAULT_USER = {
 };
 
 /** Signed-in Google user if there is one, otherwise the env user. */
-const BASE_USER = signedInUser() ?? DEFAULT_USER;
+const SIGNED_IN_USER = signedInUser();
+const BASE_USER = SIGNED_IN_USER ?? DEFAULT_USER;
 
 /** For API calls. To show the user's name or email, use useCurrentUser() from app-shell instead. */
 export const CURRENT_USER =
-  demoId == null || demoId === BASE_USER.id
+  SIGNED_IN_USER != null || demoId == null || demoId === BASE_USER.id
     ? BASE_USER
     : {
         id: demoId,

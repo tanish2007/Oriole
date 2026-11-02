@@ -7,5 +7,4 @@
 
 export interface GroupCreate {
   name: string;
-  owner_id: number;
 }

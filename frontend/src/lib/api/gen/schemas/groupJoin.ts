@@ -6,6 +6,5 @@
  */
 
 export interface GroupJoin {
-  user_id: number;
   invite_code: string;
 }

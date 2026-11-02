@@ -1,11 +1,12 @@
 from collections import Counter
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 import random
 import string
 
+from auth import current_user_id
 from db import get_supabase, list_group_members, member_name_map, require_member
 
 router = APIRouter(prefix="/groups", tags=["groups"])
@@ -13,7 +14,6 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 
 class GroupCreate(BaseModel):
     name: str
-    owner_id: int
 
 class GroupCreateResponse(BaseModel):
     message: str
@@ -21,7 +21,6 @@ class GroupCreateResponse(BaseModel):
     group_id: int
 
 class GroupJoin(BaseModel):
-    user_id: int
     invite_code: str
 
 class GroupJoinResponse(BaseModel):
@@ -44,13 +43,13 @@ class GroupSummaryResponse(BaseModel):
 
 
 @router.post("", status_code=201, response_model=GroupCreateResponse)
-async def create_group(group: GroupCreate):
+async def create_group(group: GroupCreate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     
     group_data = {
         "name": group.name,
-        "owner_id": group.owner_id,
+        "owner_id": user_id,
         "max_chore_points": 100,
         "invite_code": code
     }
@@ -63,7 +62,7 @@ async def create_group(group: GroupCreate):
     
     member_data = {
         "group_id": new_group_id,
-        "user_id": group.owner_id,
+        "user_id": user_id,
         "role": "owner"
     }
     client.table("group_members").insert(member_data).execute()
@@ -71,7 +70,7 @@ async def create_group(group: GroupCreate):
     return {"message": f"Household '{group.name}' created", "invite_code": code, "group_id": new_group_id}
 
 @router.post("/join", response_model=GroupJoinResponse)
-async def join_group(join_request: GroupJoin):
+async def join_group(join_request: GroupJoin, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     group_res = client.table("groups").select("id").eq("invite_code", join_request.invite_code).execute()
 
@@ -80,14 +79,14 @@ async def join_group(join_request: GroupJoin):
 
     group_id = group_res.data[0]["id"]
 
-    existing_member = client.table("group_members").select("user_id").eq("group_id", group_id).eq("user_id", join_request.user_id).execute()
+    existing_member = client.table("group_members").select("user_id").eq("group_id", group_id).eq("user_id", user_id).execute()
 
     if existing_member.data:
          raise HTTPException(status_code=400, detail="User is already in this household")
 
     member_data = {
         "group_id": group_id,
-        "user_id": join_request.user_id,
+        "user_id": user_id,
         "role": "member"
     }
     client.table("group_members").insert(member_data).execute()
@@ -95,7 +94,7 @@ async def join_group(join_request: GroupJoin):
     return {"message": "Successfully joined the household", "group_id": group_id}
 
 @router.get("/get_invite_code", response_model=GroupInviteCodeResponse)
-async def get_invite_code(group_id: int, user_id: int):
+async def get_invite_code(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
         
@@ -123,7 +122,7 @@ def _members(client, group_id: int) -> list[dict]:
 
 
 @router.get("/{group_id}/members", response_model=list[MemberResponse])
-async def list_members(group_id: int, user_id: int):
+async def list_members(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     members = _members(client, group_id)
@@ -132,7 +131,7 @@ async def list_members(group_id: int, user_id: int):
 
 
 @router.get("/{group_id}/leaderboard", response_model=list[MemberResponse])
-async def leaderboard(group_id: int, user_id: int, period: Literal["week", "month"]):
+async def leaderboard(group_id: int, period: Literal["week", "month"], user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     key = "month_points" if period == "month" else "week_points"
@@ -145,7 +144,7 @@ async def leaderboard(group_id: int, user_id: int, period: Literal["week", "mont
 
 
 @router.get("", response_model=list[GroupSummaryResponse])
-async def list_groups(user_id: int):
+async def list_groups(user_id: int = Depends(current_user_id)):
     client = get_supabase()
     memberships = client.table("group_members").select("group_id, role").eq("user_id", user_id).execute().data
     if not memberships:

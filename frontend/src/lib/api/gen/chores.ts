@@ -8,13 +8,8 @@ import type {
   ChoreCreate,
   ChoreResponse,
   ChoreUpdate,
-  ClaimChoreParams,
-  CompleteChoreParams,
   CompleteChoreResponse,
-  DeleteChoreParams,
-  GetChoreParams,
-  ListChoresParams,
-  UpdateChoreParams
+  ListChoresParams
 } from './schemas';
 
 import { apiFetch } from '../fetch';
@@ -77,26 +72,17 @@ export const listChores = async (params: ListChoresParams, options?: RequestInit
 /**
  * @summary Get Chore
  */
-export const getGetChoreUrl = (choreId: number,
-    params: GetChoreParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetChoreUrl = (choreId: number,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}`
+  return `http://127.0.0.1:8000/chores/${choreId}`
 }
 
-export const getChore = async (choreId: number,
-    params: GetChoreParams, options?: RequestInit): Promise<ChoreResponse> => {
+export const getChore = async (choreId: number, options?: RequestInit): Promise<ChoreResponse> => {
   
-  return apiFetch<ChoreResponse>(getGetChoreUrl(choreId,params),
+  return apiFetch<ChoreResponse>(getGetChoreUrl(choreId),
   {      
     ...options,
     method: 'GET'
@@ -109,27 +95,18 @@ export const getChore = async (choreId: number,
 /**
  * @summary Update Chore
  */
-export const getUpdateChoreUrl = (choreId: number,
-    params: UpdateChoreParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getUpdateChoreUrl = (choreId: number,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}`
+  return `http://127.0.0.1:8000/chores/${choreId}`
 }
 
 export const updateChore = async (choreId: number,
-    choreUpdate: ChoreUpdate,
-    params: UpdateChoreParams, options?: RequestInit): Promise<ChoreResponse> => {
+    choreUpdate: ChoreUpdate, options?: RequestInit): Promise<ChoreResponse> => {
   
-  return apiFetch<ChoreResponse>(getUpdateChoreUrl(choreId,params),
+  return apiFetch<ChoreResponse>(getUpdateChoreUrl(choreId),
   {      
     ...options,
     method: 'PATCH',
@@ -143,26 +120,17 @@ export const updateChore = async (choreId: number,
 /**
  * @summary Delete Chore
  */
-export const getDeleteChoreUrl = (choreId: number,
-    params: DeleteChoreParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getDeleteChoreUrl = (choreId: number,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}`
+  return `http://127.0.0.1:8000/chores/${choreId}`
 }
 
-export const deleteChore = async (choreId: number,
-    params: DeleteChoreParams, options?: RequestInit): Promise<void> => {
+export const deleteChore = async (choreId: number, options?: RequestInit): Promise<void> => {
   
-  return apiFetch<void>(getDeleteChoreUrl(choreId,params),
+  return apiFetch<void>(getDeleteChoreUrl(choreId),
   {      
     ...options,
     method: 'DELETE'
@@ -175,26 +143,17 @@ export const deleteChore = async (choreId: number,
 /**
  * @summary Claim Chore
  */
-export const getClaimChoreUrl = (choreId: number,
-    params: ClaimChoreParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getClaimChoreUrl = (choreId: number,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}/claim?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}/claim`
+  return `http://127.0.0.1:8000/chores/${choreId}/claim`
 }
 
-export const claimChore = async (choreId: number,
-    params: ClaimChoreParams, options?: RequestInit): Promise<ChoreResponse> => {
+export const claimChore = async (choreId: number, options?: RequestInit): Promise<ChoreResponse> => {
   
-  return apiFetch<ChoreResponse>(getClaimChoreUrl(choreId,params),
+  return apiFetch<ChoreResponse>(getClaimChoreUrl(choreId),
   {      
     ...options,
     method: 'POST'
@@ -207,26 +166,17 @@ export const claimChore = async (choreId: number,
 /**
  * @summary Complete Chore
  */
-export const getCompleteChoreUrl = (choreId: number,
-    params: CompleteChoreParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getCompleteChoreUrl = (choreId: number,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
-    
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
+  
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores/${choreId}/complete?${stringifiedParams}` : `http://127.0.0.1:8000/chores/${choreId}/complete`
+  return `http://127.0.0.1:8000/chores/${choreId}/complete`
 }
 
-export const completeChore = async (choreId: number,
-    params: CompleteChoreParams, options?: RequestInit): Promise<CompleteChoreResponse> => {
+export const completeChore = async (choreId: number, options?: RequestInit): Promise<CompleteChoreResponse> => {
   
-  return apiFetch<CompleteChoreResponse>(getCompleteChoreUrl(choreId,params),
+  return apiFetch<CompleteChoreResponse>(getCompleteChoreUrl(choreId),
   {      
     ...options,
     method: 'POST'

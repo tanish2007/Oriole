@@ -7,6 +7,5 @@
 
 export type ListChoresParams = {
 group_id: number;
-user_id: number;
 status?: string | null;
 };

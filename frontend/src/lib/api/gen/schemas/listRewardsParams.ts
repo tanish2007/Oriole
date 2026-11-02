@@ -7,5 +7,4 @@
 
 export type ListRewardsParams = {
 group_id: number;
-user_id: number;
 };

@@ -7,7 +7,6 @@
 import type { RewardCreateType } from './rewardCreateType';
 
 export interface RewardCreate {
-  user_id: number;
   group_id: number;
   /**
    * @minLength 1

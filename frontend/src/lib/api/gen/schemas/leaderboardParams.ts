@@ -7,6 +7,5 @@
 import type { LeaderboardPeriod } from './leaderboardPeriod';
 
 export type LeaderboardParams = {
-user_id: number;
 period: LeaderboardPeriod;
 };

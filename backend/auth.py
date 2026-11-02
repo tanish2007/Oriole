@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from db import get_supabase
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+PUBLIC_PATHS = {"/", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"}
 
 class MeResponse(BaseModel):
     id: int
@@ -59,12 +62,27 @@ def find_or_create_user(identity: dict) -> dict:
     return res.data[0]
 
 
-def current_user_id(authorization: str | None = Header(default=None)) -> int:
-    """For routes that should act as the signed-in user (not wired into the existing routes yet)."""
-    return int(find_or_create_user(verify_token(authorization))["id"])
+async def require_auth(request: Request, call_next):
+    # middleware that checks the user's auth before any request that needs it
+    if request.method == "OPTIONS" or request.url.path in PUBLIC_PATHS:
+        return await call_next(request)
+
+    header = request.headers.get("authorization")
+    try:
+        request.state.user = await run_in_threadpool(lambda: find_or_create_user(verify_token(header)))
+    except HTTPException as exc:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    return await call_next(request)
+
+
+def current_user(request: Request) -> dict:
+    return request.state.user
+
+# gives the current user id to requests
+def current_user_id(user: dict = Depends(current_user)) -> int:
+    return int(user["id"])
 
 
 @router.get("/me", response_model=MeResponse)
-async def me(authorization: str | None = Header(default=None)):
-    user = find_or_create_user(verify_token(authorization))
+async def me(user: dict = Depends(current_user)):
     return {"id": user["id"], "name": user.get("name") or "", "email": user.get("email") or ""}
