@@ -23,7 +23,7 @@ export const getCreateRewardUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/rewards`
+  return `/rewards`
 }
 
 export const createReward = async (rewardCreate: RewardCreate, options?: RequestInit): Promise<RewardResponse> => {
@@ -54,7 +54,7 @@ export const getListRewardsUrl = (params: ListRewardsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/rewards?${stringifiedParams}` : `http://127.0.0.1:8000/rewards`
+  return stringifiedParams.length > 0 ? `/rewards?${stringifiedParams}` : `/rewards`
 }
 
 export const listRewards = async (params: ListRewardsParams, options?: RequestInit): Promise<RewardResponse[]> => {
@@ -77,7 +77,7 @@ export const getGetRewardUrl = (rewardId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/rewards/${rewardId}`
+  return `/rewards/${rewardId}`
 }
 
 export const getReward = async (rewardId: number, options?: RequestInit): Promise<RewardResponse> => {
@@ -100,7 +100,7 @@ export const getUpdateRewardUrl = (rewardId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/rewards/${rewardId}`
+  return `/rewards/${rewardId}`
 }
 
 export const updateReward = async (rewardId: number,
@@ -125,7 +125,7 @@ export const getDeleteRewardUrl = (rewardId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/rewards/${rewardId}`
+  return `/rewards/${rewardId}`
 }
 
 export const deleteReward = async (rewardId: number, options?: RequestInit): Promise<void> => {
@@ -148,7 +148,7 @@ export const getRedeemRewardUrl = (rewardId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/rewards/${rewardId}/redeem`
+  return `/rewards/${rewardId}/redeem`
 }
 
 export const redeemReward = async (rewardId: number, options?: RequestInit): Promise<MemberPoints> => {

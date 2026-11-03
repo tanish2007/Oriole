@@ -15,7 +15,7 @@ export const getRootUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/`
+  return `/`
 }
 
 export const root = async ( options?: RequestInit): Promise<unknown> => {

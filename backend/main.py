@@ -6,6 +6,7 @@ import chores
 import rewards
 import group
 import auth
+import os
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -13,8 +14,7 @@ app = FastAPI(generate_unique_id_function=lambda route: route.name, dependencies
 app.middleware("http")(auth.require_auth)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origins=os.environ.get("FRONTEND_URLS", "http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

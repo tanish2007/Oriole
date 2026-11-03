@@ -27,7 +27,7 @@ export const getListGroupsUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/groups`
+  return `/groups`
 }
 
 export const listGroups = async ( options?: RequestInit): Promise<GroupSummaryResponse[]> => {
@@ -50,7 +50,7 @@ export const getCreateGroupUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/groups`
+  return `/groups`
 }
 
 export const createGroup = async (groupCreate: GroupCreate, options?: RequestInit): Promise<GroupCreateResponse> => {
@@ -74,7 +74,7 @@ export const getJoinGroupUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/groups/join`
+  return `/groups/join`
 }
 
 export const joinGroup = async (groupJoin: GroupJoin, options?: RequestInit): Promise<GroupJoinResponse> => {
@@ -105,7 +105,7 @@ export const getGetInviteCodeUrl = (params: GetInviteCodeParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/groups/get_invite_code?${stringifiedParams}` : `http://127.0.0.1:8000/groups/get_invite_code`
+  return stringifiedParams.length > 0 ? `/groups/get_invite_code?${stringifiedParams}` : `/groups/get_invite_code`
 }
 
 export const getInviteCode = async (params: GetInviteCodeParams, options?: RequestInit): Promise<GroupInviteCodeResponse> => {
@@ -128,7 +128,7 @@ export const getListMembersUrl = (groupId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/groups/${groupId}/members`
+  return `/groups/${groupId}/members`
 }
 
 export const listMembers = async (groupId: number, options?: RequestInit): Promise<MemberResponse[]> => {
@@ -159,7 +159,7 @@ export const getLeaderboardUrl = (groupId: number,
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/groups/${groupId}/leaderboard?${stringifiedParams}` : `http://127.0.0.1:8000/groups/${groupId}/leaderboard`
+  return stringifiedParams.length > 0 ? `/groups/${groupId}/leaderboard?${stringifiedParams}` : `/groups/${groupId}/leaderboard`
 }
 
 export const leaderboard = async (groupId: number,
