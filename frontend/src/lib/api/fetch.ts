@@ -8,6 +8,8 @@ export class ApiError extends Error
   }
 }
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+
 export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T> =>
 {
   const headers = new Headers(options.headers);
@@ -15,7 +17,7 @@ export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T>
     const { data } = await supabase.auth.getSession();
     if (data.session) headers.set("Authorization", `Bearer ${data.session.access_token}`);
   }
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(`${API_URL}${url}`, { ...options, headers });
   const text = [204, 205, 304].includes(res.status) ? "" : await res.text();
   let body: unknown;
   try {

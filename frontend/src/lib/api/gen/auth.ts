@@ -19,7 +19,7 @@ export const getMeUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/auth/me`
+  return `/auth/me`
 }
 
 export const me = async ( options?: RequestInit): Promise<MeResponse> => {

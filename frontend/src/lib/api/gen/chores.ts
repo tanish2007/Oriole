@@ -23,7 +23,7 @@ export const getCreateChoreUrl = () => {
 
   
 
-  return `http://127.0.0.1:8000/chores`
+  return `/chores`
 }
 
 export const createChore = async (choreCreate: ChoreCreate, options?: RequestInit): Promise<ChoreResponse> => {
@@ -54,7 +54,7 @@ export const getListChoresUrl = (params: ListChoresParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `http://127.0.0.1:8000/chores?${stringifiedParams}` : `http://127.0.0.1:8000/chores`
+  return stringifiedParams.length > 0 ? `/chores?${stringifiedParams}` : `/chores`
 }
 
 export const listChores = async (params: ListChoresParams, options?: RequestInit): Promise<ChoreResponse[]> => {
@@ -77,7 +77,7 @@ export const getGetChoreUrl = (choreId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/chores/${choreId}`
+  return `/chores/${choreId}`
 }
 
 export const getChore = async (choreId: number, options?: RequestInit): Promise<ChoreResponse> => {
@@ -100,7 +100,7 @@ export const getUpdateChoreUrl = (choreId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/chores/${choreId}`
+  return `/chores/${choreId}`
 }
 
 export const updateChore = async (choreId: number,
@@ -125,7 +125,7 @@ export const getDeleteChoreUrl = (choreId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/chores/${choreId}`
+  return `/chores/${choreId}`
 }
 
 export const deleteChore = async (choreId: number, options?: RequestInit): Promise<void> => {
@@ -148,7 +148,7 @@ export const getClaimChoreUrl = (choreId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/chores/${choreId}/claim`
+  return `/chores/${choreId}/claim`
 }
 
 export const claimChore = async (choreId: number, options?: RequestInit): Promise<ChoreResponse> => {
@@ -171,7 +171,7 @@ export const getCompleteChoreUrl = (choreId: number,) => {
 
   
 
-  return `http://127.0.0.1:8000/chores/${choreId}/complete`
+  return `/chores/${choreId}/complete`
 }
 
 export const completeChore = async (choreId: number, options?: RequestInit): Promise<CompleteChoreResponse> => {
