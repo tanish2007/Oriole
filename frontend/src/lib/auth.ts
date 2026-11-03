@@ -1,5 +1,6 @@
-import { apiBase } from "./http";
 import { authConfigured, supabase } from "./supabase";
+
+import * as auth from "@/lib/api/gen/auth";
 
 export const SIGNED_IN_KEY = "choreshareUser";
 
@@ -18,20 +19,13 @@ export async function signInWithGoogle(): Promise<void> {
 
 /** Runs after Google sends the user back: ask the backend who this login is and remember it. */
 export async function completeSignIn(accessToken: string): Promise<SignedInUser> {
-  const response = await fetch(`${apiBase()}/auth/me`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(typeof body?.detail === "string" ? body.detail : `Sign-in failed (${response.status})`);
-  }
-  const user = (await response.json()) as SignedInUser;
+  const response = await auth.me({ headers: { Authorization: `Bearer ${accessToken}` } });
   try {
-    localStorage.setItem(SIGNED_IN_KEY, JSON.stringify(user));
+    localStorage.setItem(SIGNED_IN_KEY, JSON.stringify(response));
   } catch {
     throw new Error("Your browser is blocking storage, so sign-in can't be remembered.");
   }
-  return user;
+  return response;
 }
 
 export async function signOut(): Promise<void> {

@@ -6,7 +6,6 @@
 import * as rewards from "@/lib/api/gen/rewards"
 
 import { toApiRewardType, toMember, toReward } from "./map";
-import { CURRENT_USER } from "./session";
 import type { Member, Reward, RewardInput } from "./types";
 
 export type { Reward, RewardInput, RewardScope } from "./types";
@@ -35,31 +34,31 @@ function rewardBody(input: RewardInput)
 
 export async function listRewards(groupId: number): Promise<Reward[]>
 {
-  const response = await rewards.listRewards({group_id: groupId, user_id: CURRENT_USER.id});
+  const response = await rewards.listRewards({group_id: groupId});
   return response.map(toReward);
 }
 
 export async function createReward(groupId: number, input: RewardInput): Promise<Reward>
 {
   const cleaned = cleanReward(input);
-  const response = await rewards.createReward({user_id: CURRENT_USER.id, group_id: groupId, ...rewardBody(cleaned)});
+  const response = await rewards.createReward({group_id: groupId, ...rewardBody(cleaned)});
   return toReward(response);
 }
 
 export async function updateReward(_groupId: number, rewardId: number, input: RewardInput): Promise<Reward>
 {
   const cleaned = cleanReward(input);
-  const response = await rewards.updateReward(rewardId, rewardBody(cleaned),  {user_id: CURRENT_USER.id});
+  const response = await rewards.updateReward(rewardId, rewardBody(cleaned));
   return toReward(response);
 }
 
 export async function deleteReward(_groupId: number, rewardId: number): Promise<void>
 {
-  await rewards.deleteReward(rewardId, {user_id: CURRENT_USER.id});
+  await rewards.deleteReward(rewardId);
 }
 
 export async function redeemReward(_groupId: number, rewardId: number): Promise<Member>
 {
-  const response = await rewards.redeemReward(rewardId, {user_id: CURRENT_USER.id});
+  const response = await rewards.redeemReward(rewardId);
   return toMember(response);
 }

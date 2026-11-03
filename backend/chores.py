@@ -1,16 +1,16 @@
 import re
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from auth import current_user_id
 from db import get_supabase, list_group_members, missing_column, require_member, save_member_points
 
 router = APIRouter(prefix="/chores", tags=["chores"])
 
 
 class ChoreCreate(BaseModel):
-    user_id: int
     group_id: int
     title: str = Field(min_length=1, max_length=100)
     description: str = ""
@@ -93,14 +93,14 @@ def check_chore_fields(client, group_id: int, points: int, due: str | None) -> N
 
 
 @router.post("", status_code=201, response_model=ChoreResponse)
-async def create_chore(body: ChoreCreate):
+def create_chore(body: ChoreCreate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
-    require_member(client, body.group_id, body.user_id)
+    require_member(client, body.group_id, user_id)
     check_chore_fields(client, body.group_id, body.points, body.due)
 
     row = {
         "group_id": body.group_id,
-        "created_by": body.user_id,
+        "created_by": user_id,
         "title": body.title,
         "description": body.description,
         "points": body.points,
@@ -113,13 +113,13 @@ async def create_chore(body: ChoreCreate):
 
 
 @router.get("/{chore_id}", response_model=ChoreResponse)
-async def get_chore(chore_id: int, user_id: int):
+def get_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     return load_chore(client, chore_id, user_id)
 
 
 @router.patch("/{chore_id}", response_model=ChoreResponse)
-async def update_chore(chore_id: int, body: ChoreUpdate, user_id: int):
+def update_chore(chore_id: int, body: ChoreUpdate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     chore = load_chore(client, chore_id, user_id)
     check_chore_fields(client, chore["group_id"], body.points, body.due)
@@ -134,14 +134,14 @@ async def update_chore(chore_id: int, body: ChoreUpdate, user_id: int):
 
 
 @router.delete("/{chore_id}", status_code=204)
-async def delete_chore(chore_id: int, user_id: int):
+def delete_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     load_chore(client, chore_id, user_id)
     client.table("chores").delete().eq("id", chore_id).execute()
 
 
 @router.post("/{chore_id}/claim", response_model=ChoreResponse)
-async def claim_chore(chore_id: int, user_id: int):
+def claim_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     chore = load_chore(client, chore_id, user_id)
     if chore["status"] != "available" or chore.get("assignee_id") is not None:
@@ -163,7 +163,7 @@ async def claim_chore(chore_id: int, user_id: int):
 
 
 @router.post("/{chore_id}/complete", response_model=CompleteChoreResponse)
-async def complete_chore(chore_id: int, user_id: int):
+def complete_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     chore = load_chore(client, chore_id, user_id)
     assignee = chore.get("assignee_id")
@@ -202,7 +202,7 @@ async def complete_chore(chore_id: int, user_id: int):
 
 
 @router.get("", response_model=list[ChoreResponse])
-async def list_chores(group_id: int, user_id: int, status: str | None = None):
+def list_chores(group_id: int, status: str | None = None, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     query = client.table("chores").select("*").eq("group_id", group_id)
