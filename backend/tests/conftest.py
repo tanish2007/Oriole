@@ -37,6 +37,7 @@ def client(db, monkeypatch) -> Generator[TestClient, None, None]:
     monkeypatch.setattr("chores.get_supabase", lambda: db)
     monkeypatch.setattr("db.get_supabase", lambda: db)
     monkeypatch.setattr("auth.get_supabase", lambda: db)
+    monkeypatch.setattr("rewards.get_supabase", lambda: db)
 
     def fake_verify(_authorization: str | None) -> dict:
         return {"auth_id": "demo-auth", "email": DEMO_USER["email"], "name": DEMO_USER["name"]}
