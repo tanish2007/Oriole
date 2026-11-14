@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from functools import lru_cache
 
 from fastapi import HTTPException
@@ -10,14 +11,24 @@ from memory import DemoClient, demo_client
 log = logging.getLogger("uvicorn.error")
 
 
+_thread = threading.local()
+
+
 @lru_cache
+def _shared_demo_client() -> DemoClient:
+    log.warning("Supabase is not configured. Serving the in-memory Team Oriole demo.")
+    return demo_client()
+
+
 def get_supabase() -> Client | DemoClient:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     if not url or not key:
-        log.warning("Supabase is not configured. Serving the in-memory Team Oriole demo.")
-        return demo_client()
-    return create_client(url, key)
+        return _shared_demo_client()
+    # One client per thread: sharing one across the threadpool fails under load with httpx.ReadError.
+    if not hasattr(_thread, "client"):
+        _thread.client = create_client(url, key)
+    return _thread.client
 
 
 def require_member(client: Client, group_id: int, user_id: int) -> None:
@@ -46,21 +57,18 @@ def _lookup_failed(exc: BaseException) -> bool:
 def member_name_map(client: Client, user_ids: list[int]) -> dict[int, str]:
     if not user_ids:
         return {}
-    for table, column in (("users", "name"), ("profiles", "full_name"), ("profiles", "name")):
-        try:
-            res = client.table(table).select(f"id, {column}").in_("id", user_ids).execute()
-        except Exception as exc:
-            if _lookup_failed(exc):
-                continue
-            raise
-        names: dict[int, str] = {}
-        for row in res.data or []:
-            value = row.get(column)
-            if isinstance(value, str) and value.strip():
-                names[int(row["id"])] = value
-        if names:
-            return names
-    return {}
+    try:
+        res = client.table("users").select("id, name").in_("id", user_ids).execute()
+    except Exception as exc:
+        if _lookup_failed(exc):
+            return {}
+        raise
+    names: dict[int, str] = {}
+    for row in res.data or []:
+        value = row.get("name")
+        if isinstance(value, str) and value.strip():
+            names[int(row["id"])] = value
+    return names
 
 
 def list_group_members(client: Client, group_id: int) -> tuple[list[dict], bool]:

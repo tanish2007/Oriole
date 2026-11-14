@@ -8,7 +8,6 @@ export default defineConfig({
       target: "./src/lib/api/gen/",
       schemas: "./src/lib/api/gen/schemas",
       client: "fetch",
-      baseUrl: "http://127.0.0.1:8000",
       override: {
         mutator: { path: "./src/lib/api/fetch.ts", name: "apiFetch" },
         fetch: { includeHttpResponseReturnType: false },

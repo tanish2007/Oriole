@@ -1,15 +1,15 @@
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from auth import current_user_id
 from db import get_supabase, list_group_members, public_member, require_member, save_member_points
 
 router = APIRouter(prefix="/rewards", tags=["rewards"])
 
 
 class RewardCreate(BaseModel):
-    user_id: int
     group_id: int
     name: str = Field(min_length=1, max_length=100)
     cost: int = Field(ge=1)
@@ -47,16 +47,16 @@ def load_reward(client, reward_id: int, user_id: int) -> dict:
 
 
 @router.post("", status_code=201, response_model=RewardResponse)
-async def create_reward(body: RewardCreate):
+def create_reward(body: RewardCreate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
-    require_member(client, body.group_id, body.user_id)
+    require_member(client, body.group_id, user_id)
 
     res = (
         client.table("rewards")
         .insert(
             {
                 "group_id": body.group_id,
-                "created_by": body.user_id,
+                "created_by": user_id,
                 "name": body.name,
                 "cost": body.cost,
                 "type": body.type,
@@ -68,13 +68,13 @@ async def create_reward(body: RewardCreate):
 
 
 @router.get("/{reward_id}", response_model=RewardResponse)
-async def get_reward(reward_id: int, user_id: int):
+def get_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     return load_reward(client, reward_id, user_id)
 
 
 @router.patch("/{reward_id}", response_model=RewardResponse)
-async def update_reward(reward_id: int, body: RewardUpdate, user_id: int):
+def update_reward(reward_id: int, body: RewardUpdate, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     load_reward(client, reward_id, user_id)
     res = (
@@ -89,14 +89,14 @@ async def update_reward(reward_id: int, body: RewardUpdate, user_id: int):
 
 
 @router.delete("/{reward_id}", status_code=204)
-async def delete_reward(reward_id: int, user_id: int):
+def delete_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     load_reward(client, reward_id, user_id)
     client.table("rewards").delete().eq("id", reward_id).execute()
 
 
 @router.post("/{reward_id}/redeem", response_model=MemberPoints)
-async def redeem_reward(reward_id: int, user_id: int):
+def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     reward = load_reward(client, reward_id, user_id)
     rows, supported = list_group_members(client, reward["group_id"])
@@ -117,7 +117,7 @@ async def redeem_reward(reward_id: int, user_id: int):
 
 
 @router.get("", response_model=list[RewardResponse])
-async def list_rewards(group_id: int, user_id: int):
+def list_rewards(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
     return client.table("rewards").select("*").eq("group_id", group_id).execute().data

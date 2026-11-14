@@ -35,13 +35,12 @@ function Modal({ titleId, title, onClose, onSubmit, children }: { titleId: strin
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4">
       <form
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onSubmit={onSubmit}
-        onClick={(event) => event.stopPropagation()}
         noValidate
         className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
@@ -207,7 +206,6 @@ export default function GroupsPage() {
         <div>
           <p className="text-base font-medium text-[#9a7fb0]">Your households</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Groups</h1>
-          <p className="mt-1 text-[#7c6f9c]">You can belong to more than one group</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/groups?panel=join" scroll={false} className={secondaryClass}>
@@ -234,7 +232,7 @@ export default function GroupsPage() {
               >
                 <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">{group.name}</h2>
                 <p className="mt-1 text-base text-[#6b6590]">
-                  {group.memberCount} {group.memberCount === 1 ? "member" : "members"} · invite-only
+                  {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
                 </p>
                 <span className="mt-4 inline-block rounded-full bg-[#ebe6f1] px-3 py-1 text-base font-medium text-[#9a7fb0]">
                   {group.role === "owner" ? "Owner" : "Member"}

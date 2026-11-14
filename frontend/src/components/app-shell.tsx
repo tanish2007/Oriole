@@ -3,22 +3,19 @@
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { Fraunces, Outfit } from "next/font/google";
 import { listGroups, type Group } from "@/lib/groups";
 import { CURRENT_USER, DEFAULT_USER, householdPath, pickDefaultGroup } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
 
 const noSubscribe = () => () => {};
 
 /**
- * The signed-in user to display. The server renders DEFAULT_USER because it can't see a tab's
- * ?user= override; React swaps in the tab's user right after hydration without a mismatch.
+ * The signed-in user to display. The server renders DEFAULT_USER because it can't see the browser's
+ * sign-in; React swaps in the signed-in user right after hydration without a mismatch.
  */
 export function useCurrentUser() {
   return useSyncExternalStore(noSubscribe, () => CURRENT_USER, () => DEFAULT_USER);
 }
-
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
-const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 
 const NotifyContext = createContext<((message: string) => void) | null>(null);
 
@@ -158,7 +155,21 @@ function itemActive(label: string, pathname: string) {
   return false;
 }
 
+// prevents the main pages from rendering before the user is logged in
 export function AppShell({ children }: { children: ReactNode }) {
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setSignedIn(true);
+      else window.location.replace("/login");
+    });
+  }, []);
+
+  return signedIn ? <SignedInShell>{children}</SignedInShell> : null;
+}
+
+function SignedInShell({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
   const pathname = usePathname();
   const router = useRouter();
@@ -246,7 +257,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <NotifyContext.Provider value={notify}>
       <GroupsContext.Provider value={{ groups, ready: groupsReady, refreshGroups }}>
       <RefreshContext.Provider value={refreshTick}>
-      <div className={`${display.variable} ${sans.variable} flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]`}>
+      <div className="flex min-h-screen font-[family-name:var(--font-sans)] text-[#1c2750]">
         {!mobileOpen && (
           <button
             type="button"

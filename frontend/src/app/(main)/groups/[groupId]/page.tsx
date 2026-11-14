@@ -84,12 +84,11 @@ function RemoveChoreModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="remove-chore-title"
-        onClick={(event) => event.stopPropagation()}
         className="flex max-h-[min(32rem,calc(100vh-2rem))] w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
         <h2 id="remove-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
@@ -195,13 +194,12 @@ function ChoreModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4">
       <form
         role="dialog"
         aria-modal="true"
         aria-labelledby="chore-modal-title"
         onSubmit={submit}
-        onClick={(event) => event.stopPropagation()}
         noValidate
         className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
