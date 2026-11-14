@@ -1,10 +1,10 @@
 import * as groups from "@/lib/api/gen/groups";
 
-import { toGroup } from "./map";
-import type { Group } from "./types";
+import { toGroup, toHouseholdMember } from "./map";
+import type { Group, HouseholdMember } from "./types";
 import { GroupCreateResponse, GroupInviteCodeResponse, GroupJoinResponse } from "./api/gen/schemas";
 
-export type { Group } from "./types";
+export type { Group, HouseholdMember } from "./types";
 
 export async function createGroup(name: string):  Promise<GroupCreateResponse>
 {
@@ -34,4 +34,23 @@ export async function listGroups(): Promise<Group[]>
 {
     const response = await groups.listGroups();
     return response.map(toGroup);
+}
+
+/** Members with their role, owner first. */
+export async function listHouseholdMembers(groupId: number): Promise<HouseholdMember[]>
+{
+    const response = await groups.listMembers(groupId);
+    return response.map(toHouseholdMember);
+}
+
+/** Owner only. Their claimed chores go back to available. */
+export async function removeMember(groupId: number, memberId: number): Promise<void>
+{
+    await groups.removeMember(groupId, memberId);
+}
+
+/** Owners can't leave their own household. */
+export async function leaveGroup(groupId: number): Promise<void>
+{
+    await groups.leaveGroup(groupId);
 }

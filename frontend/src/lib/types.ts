@@ -7,6 +7,11 @@ export type Member = {
   points: number;
 };
 
+/** A member as the household's member list shows them. */
+export type HouseholdMember = Member & {
+  role: GroupRole;
+};
+
 export type Chore = {
   id: number;
   groupId: number;
@@ -15,6 +20,8 @@ export type Chore = {
   points: number;
   due: string;
   assigneeId: number | null;
+  /** Who added the chore. Only they can remove it. */
+  createdBy: number;
   status: Status;
 };
 
@@ -37,6 +44,8 @@ export type Reward = {
   title: string;
   cost: number;
   scope: RewardScope;
+  /** Who added the reward. Only they can remove it. */
+  createdBy: number;
 };
 
 export type RewardInput = {

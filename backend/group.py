@@ -35,6 +35,9 @@ class MemberResponse(BaseModel):
     name: str
     points: int
 
+class GroupMemberResponse(MemberResponse):
+    role: Literal["owner", "member"]
+
 class GroupSummaryResponse(BaseModel):
     id: int
     name: str
@@ -121,13 +124,22 @@ def _members(client, group_id: int) -> list[dict]:
     ]
 
 
-@router.get("/{group_id}/members", response_model=list[MemberResponse])
+@router.get("/{group_id}/members", response_model=list[GroupMemberResponse])
 def list_members(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
+    owner_id = _owner_id(client, group_id)
     members = _members(client, group_id)
-    members.sort(key=lambda member: (member["name"].lower(), member["id"]))
-    return [{"id": member["id"], "name": member["name"], "points": member["points"]} for member in members]
+    members.sort(key=lambda member: (member["id"] != owner_id, member["name"].lower(), member["id"]))
+    return [
+        {
+            "id": member["id"],
+            "name": member["name"],
+            "points": member["points"],
+            "role": "owner" if member["id"] == owner_id else "member",
+        }
+        for member in members
+    ]
 
 
 @router.get("/{group_id}/leaderboard", response_model=list[MemberResponse])

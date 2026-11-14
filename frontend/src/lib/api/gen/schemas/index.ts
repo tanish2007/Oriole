@@ -19,6 +19,8 @@ export * from './groupCreateResponse';
 export * from './groupInviteCodeResponse';
 export * from './groupJoin';
 export * from './groupJoinResponse';
+export * from './groupMemberResponse';
+export * from './groupMemberResponseRole';
 export * from './groupSummaryResponse';
 export * from './groupSummaryResponseRole';
 export * from './hTTPValidationError';
