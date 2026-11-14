@@ -121,7 +121,7 @@ function buildNav(groupId: number | null): NavItem[] {
           ? undefined
           : [
               { label: "Add reward", href: `${rewardsHome}?panel=add` },
-              { label: "Manage rewards", href: rewardsHome },
+              { label: "Remove rewards", href: `${rewardsHome}?panel=remove` },
             ],
     },
     {
