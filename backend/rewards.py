@@ -91,7 +91,9 @@ def update_reward(reward_id: int, body: RewardUpdate, user_id: int = Depends(cur
 @router.delete("/{reward_id}", status_code=204)
 def delete_reward(reward_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
-    load_reward(client, reward_id, user_id)
+    reward = load_reward(client, reward_id, user_id)
+    if reward["created_by"] != user_id:
+        raise HTTPException(status_code=403, detail="Only the creator can remove this reward.")
     client.table("rewards").delete().eq("id", reward_id).execute()
 
 
