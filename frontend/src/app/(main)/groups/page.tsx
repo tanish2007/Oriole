@@ -35,13 +35,12 @@ function Modal({ titleId, title, onClose, onSubmit, children }: { titleId: strin
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4">
       <form
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onSubmit={onSubmit}
-        onClick={(event) => event.stopPropagation()}
         noValidate
         className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
