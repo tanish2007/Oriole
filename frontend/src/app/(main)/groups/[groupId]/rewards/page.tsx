@@ -1,5 +1,5 @@
 "use client";
-
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { listMembers } from "@/lib/chores";
@@ -122,6 +122,9 @@ export default function RewardsPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Reward | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const panelAdd = useSearchParams().get("panel") === "add";
 
   useEffect(() => {
     if (pending) return;
@@ -151,7 +154,8 @@ export default function RewardsPage() {
   const closeModal = useCallback(() => {
     setCreating(false);
     setEditing(null);
-  }, []);
+    if (panelAdd) router.replace(pathname);
+  }, [panelAdd, pathname, router]);
 
   const save = async (input: RewardInput) => {
     if (pending) return;
@@ -165,7 +169,7 @@ export default function RewardsPage() {
       } else {
         const reward = await createReward(group.id, input);
         setRewards((current) => [...current, reward]);
-        setCreating(false);
+        closeModal();
         notify("Reward added");
       }
     } catch (error) {
@@ -304,7 +308,7 @@ export default function RewardsPage() {
         )}
       </section>
 
-      {creating && (
+      {(creating || panelAdd) &&  (
         <RewardModal heading="Add reward" submitLabel="Add reward" pending={pending} onClose={closeModal} onSubmit={save} />
       )}
       {editing && (

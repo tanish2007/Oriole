@@ -76,6 +76,7 @@ const ICONS = {
   chores: "M9 12l2 2 4-4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z",
   calendar: "M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z",
   leaderboard: "M8 21h8m-4-4v4m-5-17h10v5a5 5 0 0 1-10 0V4Zm0 2H4v1a3 3 0 0 0 3 3m10-4h3v1a3 3 0 0 1-3 3",
+  rewards: "M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z",
 };
 
 /** "" on a household's chores page, "/rewards" etc. on its other pages, null outside a household. */
@@ -87,6 +88,7 @@ function householdPage(pathname: string) {
 /** Household links point at `groupId`: the one in the URL, or the default one elsewhere. */
 function buildNav(groupId: number | null): NavItem[] {
   const home = groupId == null ? "/groups" : householdPath(groupId);
+  const rewardsHome = groupId == null ? "/groups" : householdPath(groupId, "/rewards");
   return [
     {
       label: "Groups",
@@ -108,7 +110,18 @@ function buildNav(groupId: number | null): NavItem[] {
           : [
               { label: "Add chore", href: `${home}?panel=add` },
               { label: "Remove chore", href: `${home}?panel=remove` },
-              { label: "Update rewards", href: householdPath(groupId, "/rewards") },
+            ],
+    },
+    {
+      label: "Rewards",
+      href: rewardsHome,
+      icon: ICONS.rewards,
+      sub:
+        groupId == null
+          ? undefined
+          : [
+              { label: "Add reward", href: `${rewardsHome}?panel=add` },
+              { label: "Manage rewards", href: rewardsHome },
             ],
     },
     {
@@ -135,7 +148,8 @@ function Icon({ d }: { d: string }) {
 function itemActive(label: string, pathname: string) {
   const page = householdPage(pathname);
   if (label === "Groups") return pathname === "/groups" || page === "/members";
-  if (label === "Chores") return page === "" || page === "/rewards";
+  if (label === "Chores") return page === "";
+  if (label === "Rewards") return page === "/rewards";
   if (label === "Calendar") return page === "/calendar";
   if (label === "Leaderboard") return page === "/leaderboard";
   return false;
