@@ -109,6 +109,116 @@ function RewardModal({
   );
 }
 
+function RemoveRewardModal({
+  rewards,
+  pending,
+  confirmId,
+  setConfirmId,
+  onClose,
+  onRemove,
+}: {
+  rewards: Reward[];
+  pending: boolean;
+  confirmId: number | null;
+  setConfirmId: (id: number | null) => void;
+  onClose: () => void;
+  onRemove: (id: number) => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1c2750]/40 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-reward-title"
+        className="flex max-h-[min(32rem,calc(100vh-2rem))] w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
+      >
+        <h2
+          id="remove-reward-title"
+          className="font-[family-name:var(--font-display)] text-2xl font-bold"
+        >
+          Remove reward
+        </h2>
+
+        {rewards.length === 0 ? (
+          <p className="text-base text-[#6b6590]">
+            No rewards to remove.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2 overflow-y-auto">
+            {rewards.map((reward) => {
+              const confirming = confirmId === reward.id;
+
+              return (
+                <li
+                  key={reward.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">
+                      {reward.title}
+                    </p>
+                    <p className="text-base text-[#6b6590]">
+                      {reward.cost} pts · {reward.scope}
+                    </p>
+                  </div>
+
+                  {confirming ? (
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onRemove(reward.id)}
+                        className="rounded-lg bg-[#b3402f] px-4 py-2.5 text-base font-semibold text-white disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setConfirmId(reward.id)}
+                      className="shrink-0 rounded-lg bg-[#b3402f] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#9a3627] disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RewardsPage() {
   const notify = useNotify();
   const group = useGroup();
@@ -124,7 +234,9 @@ export default function RewardsPage() {
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const panelAdd = useSearchParams().get("panel") === "add";
+  const searchParams = useSearchParams();
+  const panelAdd = searchParams.get("panel") === "add";
+  const panelRemove = searchParams.get("panel") === "remove";
 
   useEffect(() => {
     if (pending) return;
@@ -152,10 +264,14 @@ export default function RewardsPage() {
   }, [notify, group.id, refreshTick, pending]);
 
   const closeModal = useCallback(() => {
-    setCreating(false);
-    setEditing(null);
-    if (panelAdd) router.replace(pathname);
-  }, [panelAdd, pathname, router]);
+  setCreating(false);
+  setEditing(null);
+  setConfirmId(null);
+
+  if (panelAdd || panelRemove) {
+    router.replace(pathname);
+  }
+  }, [panelAdd, panelRemove, pathname, router]);
 
   const save = async (input: RewardInput) => {
     if (pending) return;
@@ -319,6 +435,17 @@ export default function RewardsPage() {
           pending={pending}
           onClose={closeModal}
           onSubmit={save}
+        />
+      )}
+
+      {panelRemove && (
+        <RemoveRewardModal
+          rewards={rewards}
+          pending={pending}
+          confirmId={confirmId}
+          setConfirmId={setConfirmId}
+          onClose={closeModal}
+          onRemove={remove}
         />
       )}
     </>
