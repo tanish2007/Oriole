@@ -11,6 +11,7 @@ import type {
   GroupInviteCodeResponse,
   GroupJoin,
   GroupJoinResponse,
+  GroupMemberResponse,
   GroupSummaryResponse,
   LeaderboardParams,
   MemberResponse
@@ -131,9 +132,9 @@ export const getListMembersUrl = (groupId: number,) => {
   return `/groups/${groupId}/members`
 }
 
-export const listMembers = async (groupId: number, options?: RequestInit): Promise<MemberResponse[]> => {
+export const listMembers = async (groupId: number, options?: RequestInit): Promise<GroupMemberResponse[]> => {
   
-  return apiFetch<MemberResponse[]>(getListMembersUrl(groupId),
+  return apiFetch<GroupMemberResponse[]>(getListMembersUrl(groupId),
   {      
     ...options,
     method: 'GET'
@@ -169,6 +170,54 @@ export const leaderboard = async (groupId: number,
   {      
     ...options,
     method: 'GET'
+    
+    
+  }
+);}
+
+
+/**
+ * @summary Remove Member
+ */
+export const getRemoveMemberUrl = (groupId: number,
+    memberId: number,) => {
+
+
+  
+
+  return `/groups/${groupId}/members/${memberId}`
+}
+
+export const removeMember = async (groupId: number,
+    memberId: number, options?: RequestInit): Promise<void> => {
+  
+  return apiFetch<void>(getRemoveMemberUrl(groupId,memberId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+/**
+ * @summary Leave Group
+ */
+export const getLeaveGroupUrl = (groupId: number,) => {
+
+
+  
+
+  return `/groups/${groupId}/leave`
+}
+
+export const leaveGroup = async (groupId: number, options?: RequestInit): Promise<void> => {
+  
+  return apiFetch<void>(getLeaveGroupUrl(groupId),
+  {      
+    ...options,
+    method: 'POST'
     
     
   }

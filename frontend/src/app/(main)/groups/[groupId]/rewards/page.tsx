@@ -292,13 +292,15 @@ export default function RewardsPage() {
                       >
                         Edit
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmId(reward.id)}
-                        className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
-                      >
-                        Remove
-                      </button>
+                      {reward.createdBy === CURRENT_USER.id && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(reward.id)}
+                          className="rounded-lg border border-[#d5cde3] bg-white px-4 py-2.5 text-base font-semibold"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   )}
                 </li>

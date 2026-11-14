@@ -1,5 +1,5 @@
 import { CURRENT_USER } from "./session";
-import type { Chore, Group, LeaderboardEntry, Member, Reward, RewardScope, Status } from "./types";
+import type { Chore, Group, HouseholdMember, LeaderboardEntry, Member, Reward, RewardScope, Status } from "./types";
 
 export type ApiGroup = {
   id: number;
@@ -11,6 +11,7 @@ export type ApiGroup = {
 export type ApiChore = {
   id: number;
   group_id: number;
+  created_by: number;
   title: string;
   description: string | null;
   points: number;
@@ -21,6 +22,7 @@ export type ApiChore = {
 
 export type ApiReward = {
   id: number;
+  created_by: number;
   name: string;
   cost: number;
   type: string;
@@ -46,6 +48,7 @@ export function toChore(row: ApiChore): Chore {
     points: row.points,
     due: row.due ? String(row.due).slice(0, 10) : "",
     assigneeId: row.assignee_id ?? null,
+    createdBy: row.created_by,
     status: toStatus(row.status),
   };
 }
@@ -60,6 +63,7 @@ export function toReward(row: ApiReward): Reward {
     title: row.name,
     cost: row.cost,
     scope: row.type === "individual" ? "Personal" : "Group",
+    createdBy: row.created_by,
   };
 }
 
@@ -70,6 +74,10 @@ export function toMember(row: ApiMember): Member {
     name: unnamed && row.id === CURRENT_USER.id ? CURRENT_USER.name : row.name,
     points: row.points,
   };
+}
+
+export function toHouseholdMember(row: ApiMember & { role: string }): HouseholdMember {
+  return { ...toMember(row), role: row.role === "owner" ? "owner" : "member" };
 }
 
 export function toEntry(row: ApiMember): LeaderboardEntry {

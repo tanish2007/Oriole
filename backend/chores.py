@@ -136,7 +136,9 @@ def update_chore(chore_id: int, body: ChoreUpdate, user_id: int = Depends(curren
 @router.delete("/{chore_id}", status_code=204)
 def delete_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
-    load_chore(client, chore_id, user_id)
+    chore = load_chore(client, chore_id, user_id)
+    if chore["created_by"] != user_id:
+        raise HTTPException(status_code=403, detail="Only the creator can remove this chore.")
     client.table("chores").delete().eq("id", chore_id).execute()
 
 
