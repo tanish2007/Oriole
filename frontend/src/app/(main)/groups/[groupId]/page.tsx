@@ -94,8 +94,9 @@ function RemoveChoreModal({
         <h2 id="remove-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
           Remove chore
         </h2>
+        <p className="-mt-2 text-base text-[#6b6590]">You can remove chores you added.</p>
         {chores.length === 0 ? (
-          <p className="text-base text-[#6b6590]">No chores to remove.</p>
+          <p className="text-base text-[#6b6590]">You haven&apos;t added any chores yet.</p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-y-auto">
             {chores.map((chore) => {
@@ -341,7 +342,7 @@ export default function ChoresPage() {
     setPending(true);
     try {
       const member = await redeemReward(group.id, reward.id);
-      setMembers((current) => current.map((item) => (item.id === member.id ? member : item)));
+      setMembers((current) => current.map((item) => (item.id === member.id ? { ...item, points: member.points } : item)));
       notify(`Redeemed: ${reward.title}`);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Could not redeem reward");
@@ -429,7 +430,7 @@ export default function ChoresPage() {
         {c.status === "completed" && (
           <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
         )}
-        {confirmId === c.id ? (
+        {c.createdBy !== CURRENT_USER.id ? null : confirmId === c.id ? (
           <button
             type="button"
             disabled={pending}
@@ -663,7 +664,7 @@ export default function ChoresPage() {
       )}
       {removeOpen && (
         <RemoveChoreModal
-          chores={chores}
+          chores={chores.filter((chore) => chore.createdBy === CURRENT_USER.id)}
           members={members}
           pending={pending}
           onClose={closeRemove}
