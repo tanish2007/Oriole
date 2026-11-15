@@ -207,14 +207,6 @@ export default function GroupsPage() {
           <p className="text-base font-medium text-[#9a7fb0]">Your households</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Groups</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/groups?panel=join" scroll={false} className={secondaryClass}>
-            Join group
-          </Link>
-          <Link href="/groups?panel=create" scroll={false} className={primaryClass}>
-            Create group
-          </Link>
-        </div>
       </header>
 
       {!ready && <p className="py-10 text-center text-[#6b6590]">Loading groups…</p>}

@@ -98,6 +98,7 @@ function buildNav(groupId: number | null): NavItem[] {
         ...(groupId == null ? [] : [{ label: "Invite member", href: householdPath(groupId, "/members") }]),
         { label: "Create group", href: "/groups?panel=create" },
         { label: "Join group", href: "/groups?panel=join" },
+        { label: "Switch groups" },
       ],
     },
     {
@@ -175,6 +176,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const params = useParams<{ groupId?: string }>();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [switchGroupsOpen, setSwitchGroupsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
@@ -307,22 +309,13 @@ function SignedInShell({ children }: { children: ReactNode }) {
           </div>
 
           {navGroupId != null && (
-            <div className="mt-4">
-              <label htmlFor="group-switcher" className="mb-1.5 block px-1 text-sm font-medium text-[#b8c0da]">
-                Group
-              </label>
-              <select
-                id="group-switcher"
-                value={navGroupId}
-                onChange={(event) => switchGroup(Number(event.target.value))}
-                className="w-full cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 text-base font-semibold text-white outline-none transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
-              >
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id} className="bg-white text-[#1c2750]">
-                    {group.name}
-                  </option>
-                ))}
-              </select>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3">
+              <p className="text-sm font-medium text-[#b8c0da]">
+                Current Group:
+              </p>
+              <p className="mt-1 truncate text-base font-semibold text-white">
+                {groups.find((group) => group.id === navGroupId)?.name ?? "Unknown group"}
+              </p>
             </div>
           )}
 
@@ -365,9 +358,13 @@ function SignedInShell({ children }: { children: ReactNode }) {
                           router.push(item.href);
                           return;
                         }
-                        setOpenMenu(openMenu === item.label ? null : item.label);
+                        setOpenMenu(
+                          openMenu === item.label ? null : item.label,
+                        );
                       }}
-                      aria-current={item.href && pathname === item.href ? "page" : undefined}
+                      aria-current={
+                        item.href && pathname === item.href ? "page" : undefined
+                      }
                       aria-expanded={openMenu === item.label}
                       className={className}
                     >
@@ -399,13 +396,60 @@ function SignedInShell({ children }: { children: ReactNode }) {
                     <ul className="ml-6 mt-1.5 flex flex-col gap-1 border-l border-white/20 pl-3">
                       {item.sub.map((sub) => (
                         <li key={sub.label}>
-                          {sub.href ? (
+                          {sub.label === "Switch groups" ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSwitchGroupsOpen((current) => !current)
+                                }
+                                aria-expanded={switchGroupsOpen}
+                                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-base text-white/85 hover:bg-white/10"
+                              >
+                                Switch groups
+                                <span>{switchGroupsOpen ? "▴" : "▾"}</span>
+                              </button>
+
+                              {switchGroupsOpen && (
+                                <ul className="ml-3 mt-1 flex flex-col gap-1 border-l border-white/20 pl-3">
+                                  {groups.map((group) => (
+                                    <li key={group.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          switchGroup(group.id);
+
+                                          setSwitchGroupsOpen(false);
+                                        }}
+                                        aria-current={
+                                          navGroupId === group.id
+                                            ? "page"
+                                            : undefined
+                                        }
+                                        className={`w-full rounded-lg px-3 py-2 text-left text-base transition-colors hover:bg-white/10 ${
+                                          navGroupId === group.id
+                                            ? "bg-white/10 font-semibold text-white"
+                                            : "text-white/85"
+                                        }`}
+                                      >
+                                        {group.name}
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </>
+                          ) : sub.href ? (
                             <Link
                               href={sub.href}
-                              aria-current={pathname === sub.href ? "page" : undefined}
+                              aria-current={
+                                pathname === sub.href ? "page" : undefined
+                              }
                               onClick={() => setMobileOpen(false)}
                               className={`block w-full rounded-lg px-3 py-2.5 text-left text-base hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0] ${
-                                pathname === sub.href ? "bg-white/10 text-white" : "text-white/85"
+                                pathname === sub.href
+                                  ? "bg-white/10 text-white"
+                                  : "text-white/85"
                               }`}
                             >
                               {sub.label}
@@ -415,6 +459,7 @@ function SignedInShell({ children }: { children: ReactNode }) {
                               type="button"
                               onClick={() => {
                                 notify(`${sub.label} (coming soon)`);
+
                                 setMobileOpen(false);
                               }}
                               className="w-full rounded-lg px-3 py-2.5 text-left text-base text-white/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cdbfe0]"
