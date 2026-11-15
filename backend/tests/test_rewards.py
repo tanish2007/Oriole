@@ -97,10 +97,19 @@ def test_update_reward(client, auth_header):
 
 
 def test_delete_reward(client, auth_header):
-    response = client.delete("/rewards/3", headers=auth_header)
+    # Reward 1 is created_by user 1 (the authenticated demo user).
+    response = client.delete("/rewards/1", headers=auth_header)
 
     assert response.status_code == 204
-    assert client.get("/rewards/3", headers=auth_header).status_code == 404
+    assert client.get("/rewards/1", headers=auth_header).status_code == 404
+
+
+def test_delete_reward_rejects_non_creator(client, auth_header):
+    # Reward 3 is created_by user 2; user 1 may not remove it.
+    response = client.delete("/rewards/3", headers=auth_header)
+
+    assert response.status_code == 403
+    assert "creator" in response.json()["detail"].lower()
 
 
 # Redemption tests

@@ -55,6 +55,7 @@ const reward = {
   title: "Free coffee",
   cost: 30,
   scope: "Personal" as const,
+  createdBy: 1,
 };
 
 function setPoints(points: number) {
@@ -123,6 +124,7 @@ describe("Rewards page", () => {
       title: "Movie night",
       cost: 50,
       scope: "Group" as const,
+      createdBy: 1,
     };
 
     vi.mocked(createReward).mockImplementation(async () => {
@@ -311,6 +313,21 @@ describe("Rewards page", () => {
     expect(deleteReward).not.toHaveBeenCalled();
     expect(screen.getByText("Free coffee")).toBeInTheDocument();
 
+    expect(
+      within(rewardRow()).getByRole("button", { name: "Redeem" })
+    ).toBeInTheDocument();
+  });
+
+  it("hides Remove when the current user did not create the reward", async () => {
+    vi.mocked(listRewards).mockResolvedValue([
+      { ...reward, createdBy: 2 },
+    ]);
+
+    await renderPage();
+
+    expect(
+      within(rewardRow()).queryByRole("button", { name: "Remove" })
+    ).not.toBeInTheDocument();
     expect(
       within(rewardRow()).getByRole("button", { name: "Redeem" })
     ).toBeInTheDocument();
