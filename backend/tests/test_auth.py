@@ -1,5 +1,3 @@
-"""Unit tests for authentication, user resolution, and auth middleware."""
-
 from __future__ import annotations
 
 import pytest
@@ -11,9 +9,6 @@ from auth import (
     find_or_create_user,
     verify_token,
 )
-
-
-# --- Mocks for Supabase Auth ----------------------------------------------------
 
 
 class MockUser:
@@ -45,10 +40,8 @@ class MockSupabaseClient:
             self.auth = auth_service
 
 
-# --- verify_token unit tests -----------------------------------------------------
-
-
 def test_verify_token_missing_header():
+    """Reject requests missing the authorization header."""
     with pytest.raises(HTTPException) as exc:
         verify_token(None)
     assert exc.value.status_code == 401
@@ -56,6 +49,7 @@ def test_verify_token_missing_header():
 
 
 def test_verify_token_empty_header():
+    """Reject requests with an empty authorization header."""
     with pytest.raises(HTTPException) as exc:
         verify_token("")
     assert exc.value.status_code == 401
@@ -63,6 +57,7 @@ def test_verify_token_empty_header():
 
 
 def test_verify_token_invalid_prefix():
+    """Reject authorization headers that do not start with Bearer."""
     with pytest.raises(HTTPException) as exc:
         verify_token("Token some-secret-token")
     assert exc.value.status_code == 401
@@ -70,6 +65,7 @@ def test_verify_token_invalid_prefix():
 
 
 def test_verify_token_missing_supabase_auth_attribute(monkeypatch):
+    """Return 503 if the Supabase client lacks auth configuration."""
     monkeypatch.setattr("auth.get_supabase", lambda: object())
     with pytest.raises(HTTPException) as exc:
         verify_token("Bearer valid-looking-token")
@@ -78,6 +74,7 @@ def test_verify_token_missing_supabase_auth_attribute(monkeypatch):
 
 
 def test_verify_token_supabase_throws_error(monkeypatch):
+    """Return 401 when Supabase auth raises an error for an invalid token."""
     mock_client = MockSupabaseClient(MockAuthService(raise_error=True))
     monkeypatch.setattr("auth.get_supabase", lambda: mock_client)
     with pytest.raises(HTTPException) as exc:
@@ -87,6 +84,7 @@ def test_verify_token_supabase_throws_error(monkeypatch):
 
 
 def test_verify_token_user_is_none(monkeypatch):
+    """Return 401 when Supabase returns no user for the token."""
     mock_client = MockSupabaseClient(MockAuthService(user=None))
     monkeypatch.setattr("auth.get_supabase", lambda: mock_client)
     with pytest.raises(HTTPException) as exc:
@@ -96,6 +94,7 @@ def test_verify_token_user_is_none(monkeypatch):
 
 
 def test_verify_token_user_missing_email(monkeypatch):
+    """Return 401 when the authenticated user has no email."""
     mock_user = MockUser(uid="auth-1", email=None)
     mock_client = MockSupabaseClient(MockAuthService(user=mock_user))
     monkeypatch.setattr("auth.get_supabase", lambda: mock_client)
@@ -106,6 +105,7 @@ def test_verify_token_user_missing_email(monkeypatch):
 
 
 def test_verify_token_extracts_full_name(monkeypatch):
+    """Extract user ID, email, and full_name from user metadata."""
     mock_user = MockUser(
         uid="auth-100",
         email="alex@example.com",
@@ -123,6 +123,7 @@ def test_verify_token_extracts_full_name(monkeypatch):
 
 
 def test_verify_token_extracts_name_fallback(monkeypatch):
+    """Fallback to name in metadata when full_name is absent."""
     mock_user = MockUser(
         uid="auth-101",
         email="taylor@example.com",
@@ -136,6 +137,7 @@ def test_verify_token_extracts_name_fallback(monkeypatch):
 
 
 def test_verify_token_email_prefix_fallback(monkeypatch):
+    """Fallback to the email prefix when no name metadata exists."""
     mock_user = MockUser(
         uid="auth-102",
         email="sammy@example.com",
@@ -148,10 +150,8 @@ def test_verify_token_email_prefix_fallback(monkeypatch):
     assert identity["name"] == "sammy"
 
 
-# --- find_or_create_user unit tests ---------------------------------------------
-
-
 def test_find_or_create_user_returns_existing_by_auth_id(db, monkeypatch):
+    """Return the existing user when matched by auth_id."""
     monkeypatch.setattr("auth.get_supabase", lambda: db)
     db.table("users").insert(
         {"auth_id": "auth-existing", "email": "exist@example.com", "name": "Existing User"}
@@ -164,8 +164,8 @@ def test_find_or_create_user_returns_existing_by_auth_id(db, monkeypatch):
 
 
 def test_find_or_create_user_links_existing_email_without_auth_id(db, monkeypatch):
+    """Link auth_id to a pre-existing user matched by email."""
     monkeypatch.setattr("auth.get_supabase", lambda: db)
-    # Seed pre-existing user with email but no auth_id (invited before first login)
     db.table("users").insert(
         {"auth_id": None, "email": "invited@example.com", "name": "Invited User"}
     ).execute()
@@ -174,12 +174,12 @@ def test_find_or_create_user_links_existing_email_without_auth_id(db, monkeypatc
     user = find_or_create_user(identity)
     assert user["email"] == "invited@example.com"
 
-    # Confirm the auth_id was updated in the DB
     updated = db.table("users").select("*").eq("email", "invited@example.com").execute().data[0]
     assert updated["auth_id"] == "auth-linked"
 
 
 def test_find_or_create_user_creates_brand_new_user(db, monkeypatch):
+    """Insert and return a new user when neither auth_id nor email exists."""
     monkeypatch.setattr("auth.get_supabase", lambda: db)
     identity = {"auth_id": "auth-new", "email": "brandnew@example.com", "name": "Brand New"}
     user = find_or_create_user(identity)
@@ -190,10 +190,38 @@ def test_find_or_create_user_creates_brand_new_user(db, monkeypatch):
     assert "id" in user
 
 
-# --- Request state & helper tests -----------------------------------------------
+def test_find_or_create_user_email_already_used_preserves_original_account(db, monkeypatch):
+    """Preserve existing user account without overwriting auth_id or creating duplicates."""
+    monkeypatch.setattr("auth.get_supabase", lambda: db)
+
+    db.table("users").insert(
+        {
+            "auth_id": "original-auth-id",
+            "email": "claimed@example.com",
+            "name": "Original Owner",
+        }
+    ).execute()
+
+    total_users_before = len(db.table("users").select("*").execute().data)
+
+    unmatched_identity = {
+        "auth_id": "different-auth-id",
+        "email": "claimed@example.com",
+        "name": "Different Name",
+    }
+    user = find_or_create_user(unmatched_identity)
+
+    assert user["email"] == "claimed@example.com"
+    assert user["auth_id"] == "original-auth-id"
+    assert user["name"] == "Original Owner"
+
+    matching_rows = db.table("users").select("*").eq("email", "claimed@example.com").execute().data
+    assert len(matching_rows) == 1
+    assert len(db.table("users").select("*").execute().data) == total_users_before
 
 
 def test_current_user_and_id_helpers():
+    """Verify current_user and current_user_id extract data from request state."""
     class MockRequestState:
         user = {"id": 42, "name": "Test User", "email": "test@example.com"}
 
@@ -206,10 +234,8 @@ def test_current_user_and_id_helpers():
     assert current_user_id(extracted_user) == 42
 
 
-# --- API Endpoint & Middleware tests --------------------------------------------
-
-
 def test_get_me_success(client, auth_header):
+    """Return the current user profile on GET /auth/me."""
     res = client.get("/auth/me", headers=auth_header)
     assert res.status_code == 200
     data = res.json()
@@ -219,6 +245,7 @@ def test_get_me_success(client, auth_header):
 
 
 def test_get_me_as_different_user(client, auth_header, as_user):
+    """Reflect the active user profile when switching users."""
     as_user(2, name="Nathan Lam", email="nathan@example.com")
     res = client.get("/auth/me", headers=auth_header)
     assert res.status_code == 200
@@ -229,6 +256,7 @@ def test_get_me_as_different_user(client, auth_header, as_user):
 
 
 def test_public_endpoints_bypass_auth(client):
+    """Allow unauthenticated access to public endpoints like / and /openapi.json."""
     res_root = client.get("/")
     assert res_root.status_code == 200
     assert res_root.json() == {"message": "Hello World"}
@@ -238,7 +266,7 @@ def test_public_endpoints_bypass_auth(client):
 
 
 def test_options_method_bypasses_auth(client):
-    # Preflight CORS OPTIONS requests bypass authentication and receive a 200 OK from CORSMiddleware
+    """Allow CORS preflight OPTIONS requests without requiring authentication."""
     res = client.options(
         "/auth/me",
         headers={
@@ -250,6 +278,7 @@ def test_options_method_bypasses_auth(client):
 
 
 def test_middleware_rejects_missing_auth(client, monkeypatch):
+    """Reject unauthenticated requests through the middleware with 401."""
     def reject_auth(_header):
         raise HTTPException(status_code=401, detail="Sign in required")
 
@@ -261,6 +290,7 @@ def test_middleware_rejects_missing_auth(client, monkeypatch):
 
 
 def test_middleware_rejects_malformed_or_expired_auth(client, monkeypatch):
+    """Reject invalid or expired authorization tokens through middleware with 401."""
     def reject_auth(_header):
         raise HTTPException(status_code=401, detail="Invalid or expired sign-in")
 
