@@ -7,7 +7,7 @@ import random
 import string
 
 from auth import current_user_id
-from db import get_supabase, list_group_members, member_name_map, require_member
+from db import get_supabase, list_group_members, member_name_map, missing_column, require_member
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -34,6 +34,9 @@ class MemberResponse(BaseModel):
     id: int
     name: str
     points: int
+
+class GroupMemberResponse(MemberResponse):
+    role: Literal["owner", "member"]
 
 class GroupSummaryResponse(BaseModel):
     id: int
@@ -121,13 +124,22 @@ def _members(client, group_id: int) -> list[dict]:
     ]
 
 
-@router.get("/{group_id}/members", response_model=list[MemberResponse])
+@router.get("/{group_id}/members", response_model=list[GroupMemberResponse])
 def list_members(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
+    owner_id = _owner_id(client, group_id)
     members = _members(client, group_id)
-    members.sort(key=lambda member: (member["name"].lower(), member["id"]))
-    return [{"id": member["id"], "name": member["name"], "points": member["points"]} for member in members]
+    members.sort(key=lambda member: (member["id"] != owner_id, member["name"].lower(), member["id"]))
+    return [
+        {
+            "id": member["id"],
+            "name": member["name"],
+            "points": member["points"],
+            "role": "owner" if member["id"] == owner_id else "member",
+        }
+        for member in members
+    ]
 
 
 @router.get("/{group_id}/leaderboard", response_model=list[MemberResponse])
@@ -141,6 +153,51 @@ def leaderboard(group_id: int, period: Literal["week", "month"], user_id: int = 
     ]
     entries.sort(key=lambda entry: (-entry["points"], entry["name"].lower(), entry["id"]))
     return entries
+
+
+def _owner_id(client, group_id: int) -> int:
+    res = client.table("groups").select("owner_id").eq("id", group_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Household not found")
+    return int(res.data[0]["owner_id"])
+
+
+def _drop_member(client, group_id: int, member_id: int) -> None:
+    """Remove a member and put their claimed chores back up for grabs."""
+    try:
+        (
+            client.table("chores")
+            .update({"status": "available", "assignee_id": None})
+            .eq("group_id", group_id)
+            .eq("assignee_id", member_id)
+            .eq("status", "in_progress")
+            .execute()
+        )
+    except Exception as exc:
+        if not missing_column(exc):
+            raise
+    client.table("group_members").delete().eq("group_id", group_id).eq("user_id", member_id).execute()
+
+
+@router.delete("/{group_id}/members/{member_id}", status_code=204)
+def remove_member(group_id: int, member_id: int, user_id: int = Depends(current_user_id)):
+    client = get_supabase()
+    require_member(client, group_id, user_id)
+    if _owner_id(client, group_id) != user_id:
+        raise HTTPException(status_code=403, detail="Only the household owner can remove members.")
+    if member_id == user_id:
+        raise HTTPException(status_code=400, detail="You can't remove yourself.")
+    require_member(client, group_id, member_id)
+    _drop_member(client, group_id, member_id)
+
+
+@router.post("/{group_id}/leave", status_code=204)
+def leave_group(group_id: int, user_id: int = Depends(current_user_id)):
+    client = get_supabase()
+    require_member(client, group_id, user_id)
+    if _owner_id(client, group_id) == user_id:
+        raise HTTPException(status_code=400, detail="The owner can't leave their own household.")
+    _drop_member(client, group_id, user_id)
 
 
 @router.get("", response_model=list[GroupSummaryResponse])
