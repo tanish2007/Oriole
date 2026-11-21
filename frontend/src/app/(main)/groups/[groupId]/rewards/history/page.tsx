@@ -26,63 +26,6 @@ function formatDate(iso: string) {
   return `${MONTHS[month - 1]} ${day}, ${year}`;
 }
 
-function generateInitialHistory(members: Member[]): ClaimedRewardItem[] {
-  const otherMember = members.find((m) => m.id !== CURRENT_USER.id);
-  const otherId = otherMember?.id ?? 999;
-  const otherName = otherMember?.name ?? "Jordan Lee";
-
-  return [
-    {
-      id: 1,
-      rewardTitle: "Coffee run on the house",
-      cost: 20,
-      claimedBy: CURRENT_USER.id,
-      claimedByName: CURRENT_USER.name,
-      claimedAt: "2026-11-19",
-    },
-    {
-      id: 2,
-      rewardTitle: "Pick dinner spot",
-      cost: 35,
-      claimedBy: otherId,
-      claimedByName: otherName,
-      claimedAt: "2026-11-17",
-    },
-    {
-      id: 3,
-      rewardTitle: "Skip one chore",
-      cost: 40,
-      claimedBy: CURRENT_USER.id,
-      claimedByName: CURRENT_USER.name,
-      claimedAt: "2026-11-14",
-    },
-    {
-      id: 4,
-      rewardTitle: "Choose movie night pick",
-      cost: 25,
-      claimedBy: otherId,
-      claimedByName: otherName,
-      claimedAt: "2026-11-11",
-    },
-    {
-      id: 5,
-      rewardTitle: "Sleep-in pass (no morning noise)",
-      cost: 30,
-      claimedBy: CURRENT_USER.id,
-      claimedByName: CURRENT_USER.name,
-      claimedAt: "2026-11-08",
-    },
-    {
-      id: 6,
-      rewardTitle: "Take the aux cord on road trip",
-      cost: 15,
-      claimedBy: otherId,
-      claimedByName: otherName,
-      claimedAt: "2026-11-04",
-    },
-  ];
-}
-
 export default function RewardHistoryPage() {
   const notify = useNotify();
   const group = useGroup();
@@ -103,7 +46,8 @@ export default function RewardHistoryPage() {
         loaded.current = true;
         setLoadError(null);
         setMembers(nextMembers);
-        setHistory((current) => (current.length > 0 ? current : generateInitialHistory(nextMembers)));
+        // Reward history is empty until the backend tracking endpoint is connected
+        setHistory([]);
       })
       .catch((error: unknown) => {
         if (cancelled || loaded.current) return;
@@ -256,7 +200,10 @@ export default function RewardHistoryPage() {
         <div>
           {!ready && <p className="py-10 text-center text-[#6b6590]">Loading reward history…</p>}
           {ready && loadError && <p className="py-10 text-center text-[#b3402f]">{loadError}</p>}
-          {ready && !loadError && visible.length === 0 && (
+          {ready && !loadError && history.length === 0 && (
+            <p className="py-10 text-center text-[#6b6590]">No rewards have been claimed yet.</p>
+          )}
+          {ready && !loadError && history.length > 0 && visible.length === 0 && (
             <p className="py-10 text-center text-[#6b6590]">No claimed rewards match this filter.</p>
           )}
         </div>
