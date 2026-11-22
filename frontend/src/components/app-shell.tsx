@@ -123,6 +123,7 @@ function buildNav(groupId: number | null): NavItem[] {
           : [
               { label: "Add reward", href: `${rewardsHome}?panel=add` },
               { label: "Remove rewards", href: `${rewardsHome}?panel=remove` },
+              { label: "History", href: `${rewardsHome}/history` },
             ],
     },
     {

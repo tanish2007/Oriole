@@ -340,16 +340,6 @@ export default function RewardsPage() {
       <section className="mt-6 rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Possible rewards</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setCreating(true);
-            }}
-            className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e]"
-          >
-            Add reward
-          </button>
         </div>
 
         {!ready && <p className="py-10 text-center text-[#6b6590]">Loading rewards…</p>}
