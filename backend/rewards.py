@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 from auth import current_user_id
 from db import get_supabase, list_group_members, public_member, require_member, save_member_points
 
+from datetime import date, datetime, timedelta, timezone
+
 router = APIRouter(prefix="/rewards", tags=["rewards"])
 
 
@@ -36,6 +38,12 @@ class MemberPoints(BaseModel):
     name: str
     points: int
 
+class HistoryResponse(BaseModel):
+    id: int
+    name: str
+    cost: int
+    redeemed_by: int
+    redeemed_at: datetime
 
 def load_reward(client, reward_id: int, user_id: int) -> dict:
     res = client.table("rewards").select("*").eq("id", reward_id).execute()
@@ -65,6 +73,24 @@ def create_reward(body: RewardCreate, user_id: int = Depends(current_user_id)):
         .execute()
     )
     return res.data[0]
+
+
+@router.get("/history", response_model=list[HistoryResponse])
+def get_reward_history(group_id: int, user_id: int = Depends(current_user_id)):
+    client = get_supabase()
+    require_member(client, group_id, user_id)
+    res = (
+        client.table("rewards")
+        .select("id, name, cost, redeemed_by, redeemed_at")
+        .eq("group_id", group_id)
+        .not_.is_("redeemed_by", "null")
+        .order("redeemed_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    if not res.data:
+        return []
+    return res.data
 
 
 @router.get("/{reward_id}", response_model=RewardResponse)
@@ -109,6 +135,14 @@ def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id)):
         raise HTTPException(status_code=403, detail="Not a member of this group")
     if member["points"] < reward["cost"]:
         raise HTTPException(status_code=400, detail="Not enough points.")
+    res = (
+        client.table("rewards")
+        .update(({"redeemed_by": user_id, "redeemed_at": datetime.now(timezone.utc).isoformat()}))
+        .eq("id", reward_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to update reward")
     save_member_points(
         client,
         reward["group_id"],
@@ -122,4 +156,4 @@ def redeem_reward(reward_id: int, user_id: int = Depends(current_user_id)):
 def list_rewards(group_id: int, user_id: int = Depends(current_user_id)):
     client = get_supabase()
     require_member(client, group_id, user_id)
-    return client.table("rewards").select("*").eq("group_id", group_id).execute().data
+    return client.table("rewards").select("*").eq("group_id", group_id).is_("redeemed_by", "null").execute().data

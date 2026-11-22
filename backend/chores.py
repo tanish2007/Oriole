@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -194,7 +194,7 @@ def complete_chore(chore_id: int, user_id: int = Depends(current_user_id)):
     )
     res = (
         client.table("chores")
-        .update({"status": "completed"})
+        .update({"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()})
         .eq("id", chore_id)
         .execute()
     )
