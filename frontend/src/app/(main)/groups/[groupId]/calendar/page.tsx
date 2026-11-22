@@ -68,8 +68,8 @@ export default function CalendarPage() {
     <>
       {/* Sizes follow the prototype's calendar so a month fits on one screen. */}
       <header>
-        <p className="text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-[#9a7fb0]">{group.name}</p>
-        <h1 className="font-[family-name:var(--font-display)] text-[1.85rem] font-bold leading-tight tracking-[-0.02em]">Calendar</h1>
+        <p className="text-base font-medium text-[#9a7fb0]">{group.name}</p>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Calendar</h1>
         <p className="mt-0.5 text-[#7c6f9c]">Chore due dates</p>
       </header>
 

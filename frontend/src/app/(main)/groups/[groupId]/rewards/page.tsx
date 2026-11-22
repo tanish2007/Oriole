@@ -328,7 +328,7 @@ export default function RewardsPage() {
     <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-base font-medium text-[#9a7fb0]">Current group</p>
+          <p className="text-base font-medium text-[#9a7fb0]">{group.name}</p>
           <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">Rewards</h1>
           <p className="mt-1 text-[#7c6f9c]">{group.name} · spend points, or change what the group can redeem</p>
         </div>
