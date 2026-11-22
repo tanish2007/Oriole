@@ -1,6 +1,14 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
@@ -25,13 +33,41 @@ import { householdPath } from "@/lib/session";
 const FILTERS = ["All", "Available", "Mine", "Done"] as const;
 type Filter = (typeof FILTERS)[number];
 
-const STATUS_STYLE: Record<Status, { label: string; pill: string; dot: string }> = {
-  available: { label: "Available", pill: "bg-[#fde8e6] text-[#9f1239]", dot: "bg-[#e11d48]" },
-  in_progress: { label: "In progress", pill: "bg-[#fff4cc] text-[#854d0e]", dot: "bg-[#eab308]" },
-  completed: { label: "Completed", pill: "bg-[#dcfce7] text-[#166534]", dot: "bg-[#16a34a]" },
+const STATUS_STYLE: Record<
+  Status,
+  { label: string; pill: string; dot: string }
+> = {
+  available: {
+    label: "Available",
+    pill: "bg-[#fde8e6] text-[#9f1239]",
+    dot: "bg-[#e11d48]",
+  },
+  in_progress: {
+    label: "In progress",
+    pill: "bg-[#fff4cc] text-[#854d0e]",
+    dot: "bg-[#eab308]",
+  },
+  completed: {
+    label: "Completed",
+    pill: "bg-[#dcfce7] text-[#166534]",
+    dot: "bg-[#16a34a]",
+  },
 };
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 function formatDue(iso: string) {
   const [, month, day] = iso.split("-").map(Number);
@@ -47,12 +83,26 @@ function assigneeName(assigneeId: number | null, members: Member[]) {
 const inputClass =
   "w-full rounded-xl border border-[#d5cde3] bg-white px-4 py-3 text-base outline-none transition-colors placeholder:text-[#a59fbd] focus:border-[#9a7fb0] focus:ring-2 focus:ring-[#9a7fb0]/30";
 
-function Field({ id, label, optional, error, children }: { id: string; label: string; optional?: boolean; error?: string; children: ReactNode }) {
+function Field({
+  id,
+  label,
+  optional,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  optional?: boolean;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <div>
       <label htmlFor={id} className="mb-1.5 block text-base font-semibold">
         {label}
-        {optional && <span className="font-normal text-[#6b6590]"> (optional)</span>}
+        {optional && (
+          <span className="font-normal text-[#6b6590]"> (optional)</span>
+        )}
       </label>
       {children}
       {error && <p className="mt-1.5 text-base text-[#b3402f]">{error}</p>}
@@ -91,19 +141,29 @@ function RemoveChoreModal({
         aria-labelledby="remove-chore-title"
         className="flex max-h-[min(32rem,calc(100vh-2rem))] w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
-        <h2 id="remove-chore-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
+        <h2
+          id="remove-chore-title"
+          className="font-[family-name:var(--font-display)] text-2xl font-bold"
+        >
           Remove chore
         </h2>
-        <p className="-mt-2 text-base text-[#6b6590]">You can remove chores you added.</p>
+        <p className="-mt-2 text-base text-[#6b6590]">
+          You can remove chores you added.
+        </p>
         {chores.length === 0 ? (
-          <p className="text-base text-[#6b6590]">You haven&apos;t added any chores yet.</p>
+          <p className="text-base text-[#6b6590]">
+            You haven&apos;t added any chores yet.
+          </p>
         ) : (
           <ul className="flex flex-col gap-2 overflow-y-auto">
             {chores.map((chore) => {
               const confirming = confirmId === chore.id;
               const name = assigneeName(chore.assigneeId, members);
               return (
-                <li key={chore.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3">
+                <li
+                  key={chore.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-[#ebe6f1] px-3.5 py-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{chore.title}</p>
                     <p className="text-base text-[#6b6590]">
@@ -144,7 +204,11 @@ function RemoveChoreModal({
           </ul>
         )}
         <div className="flex justify-end">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60"
+          >
             Close
           </button>
         </div>
@@ -187,7 +251,8 @@ function ChoreModal({
     const next: Record<string, string> = {};
     const pts = Number(points);
     if (!title.trim()) next.title = "Enter a chore title.";
-    if (!Number.isInteger(pts) || pts < 1) next.points = "Enter whole points, 1 or more.";
+    if (!Number.isInteger(pts) || pts < 1)
+      next.points = "Enter whole points, 1 or more.";
     if (!due) next.due = "Pick a due date.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -204,32 +269,73 @@ function ChoreModal({
         noValidate
         className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-white/70 bg-[#f4f0f8] p-6 shadow-2xl"
       >
-        <h2 id="chore-modal-title" className="font-[family-name:var(--font-display)] text-2xl font-bold">
+        <h2
+          id="chore-modal-title"
+          className="font-[family-name:var(--font-display)] text-2xl font-bold"
+        >
           {heading}
         </h2>
 
         <Field id="chore-title" label="Title" error={errors.title}>
-          <input id="chore-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Clean the fridge" className={inputClass} />
+          <input
+            id="chore-title"
+            autoFocus
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Clean the fridge"
+            className={inputClass}
+          />
         </Field>
 
         <Field id="chore-detail" label="Description" optional>
-          <textarea id="chore-detail" rows={2} value={detail} onChange={(event) => setDetail(event.target.value)} placeholder="Toss expired food, wipe shelves" className={`${inputClass} resize-none`} />
+          <textarea
+            id="chore-detail"
+            rows={2}
+            value={detail}
+            onChange={(event) => setDetail(event.target.value)}
+            placeholder="Toss expired food, wipe shelves"
+            className={`${inputClass} resize-none`}
+          />
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
           <Field id="chore-points" label="Points" error={errors.points}>
-            <input id="chore-points" type="number" min={1} step={1} inputMode="numeric" value={points} onChange={(event) => setPoints(event.target.value)} placeholder="10" className={inputClass} />
+            <input
+              id="chore-points"
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={points}
+              onChange={(event) => setPoints(event.target.value)}
+              placeholder="10"
+              className={inputClass}
+            />
           </Field>
           <Field id="chore-due" label="Due date" error={errors.due}>
-            <input id="chore-due" type="date" value={due} onChange={(event) => setDue(event.target.value)} className={inputClass} />
+            <input
+              id="chore-due"
+              type="date"
+              value={due}
+              onChange={(event) => setDue(event.target.value)}
+              className={inputClass}
+            />
           </Field>
         </div>
 
         <div className="mt-2 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[#d5cde3] px-4 py-2.5 text-base font-semibold transition-colors hover:bg-white/60"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={pending} className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e] disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-[#1c2750] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#2b3a6e] disabled:opacity-50"
+          >
             {submitLabel}
           </button>
         </div>
@@ -287,7 +393,8 @@ export default function ChoresPage() {
       })
       .catch((error: unknown) => {
         if (cancelled || loaded.current) return;
-        const message = error instanceof Error ? error.message : "Could not load chores";
+        const message =
+          error instanceof Error ? error.message : "Could not load chores";
         setLoadError(message);
         notify(message);
       })
@@ -305,14 +412,17 @@ export default function ChoresPage() {
 
   const closeRemove = closeModal;
 
-  const myPoints = members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0;
+  const myPoints =
+    members.find((member) => member.id === CURRENT_USER.id)?.points ?? 0;
 
   const claim = async (id: number) => {
     if (pending) return;
     setPending(true);
     try {
       const chore = await claimChore(id);
-      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
+      setChores((current) =>
+        current.map((item) => (item.id === chore.id ? chore : item)),
+      );
       notify("Chore claimed");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Could not claim chore");
@@ -326,12 +436,20 @@ export default function ChoresPage() {
     setPending(true);
     try {
       const { chore, points } = await completeChore(id);
-      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
-      setMembers((current) => current.map((member) => (member.id === CURRENT_USER.id ? { ...member, points } : member)));
+      setChores((current) =>
+        current.map((item) => (item.id === chore.id ? chore : item)),
+      );
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === CURRENT_USER.id ? { ...member, points } : member,
+        ),
+      );
       setWeekBoard(await getLeaderboard(group.id, "week"));
       notify(`Completed. +${chore.points} points`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Could not complete chore");
+      notify(
+        error instanceof Error ? error.message : "Could not complete chore",
+      );
     } finally {
       setPending(false);
     }
@@ -342,10 +460,16 @@ export default function ChoresPage() {
     setPending(true);
     try {
       const member = await redeemReward(group.id, reward.id);
-      setMembers((current) => current.map((item) => (item.id === member.id ? { ...item, points: member.points } : item)));
+      setMembers((current) =>
+        current.map((item) =>
+          item.id === member.id ? { ...item, points: member.points } : item,
+        ),
+      );
       notify(`Redeemed: ${reward.title}`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Could not redeem reward");
+      notify(
+        error instanceof Error ? error.message : "Could not redeem reward",
+      );
     } finally {
       setPending(false);
     }
@@ -373,7 +497,9 @@ export default function ChoresPage() {
     setPending(true);
     try {
       const chore = await updateChore(editing.id, input);
-      setChores((current) => current.map((item) => (item.id === chore.id ? chore : item)));
+      setChores((current) =>
+        current.map((item) => (item.id === chore.id ? chore : item)),
+      );
       setEditing(null);
       notify("Chore updated");
     } catch (error) {
@@ -415,22 +541,39 @@ export default function ChoresPage() {
     return (
       <>
         {c.status === "available" && (
-          <button onClick={() => claim(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+          <button
+            onClick={() => claim(c.id)}
+            className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
+          >
             Claim
           </button>
         )}
         {c.status === "in_progress" && mine && (
-          <button onClick={() => complete(c.id)} className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]">
+          <button
+            onClick={() => complete(c.id)}
+            className="rounded-lg bg-[#1c2750] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
+          >
             Complete
           </button>
         )}
         {c.status === "in_progress" && !mine && (
-          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Claimed</button>
+          <button
+            disabled
+            className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]"
+          >
+            Claimed
+          </button>
         )}
         {c.status === "completed" && (
-          <button disabled className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]">Done</button>
+          <button
+            disabled
+            className="rounded-lg border border-[#d5cde3] px-3 py-2 text-sm font-medium text-[#a59fbd]"
+          >
+            Done
+          </button>
         )}
-        {c.createdBy !== CURRENT_USER.id ? null : confirmId === c.id ? (
+        {c.createdBy !== CURRENT_USER.id ||
+        c.status === "completed" ? null : confirmId === c.id ? (
           <button
             type="button"
             disabled={pending}
@@ -459,13 +602,22 @@ export default function ChoresPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-base font-medium text-[#9a7fb0]">Current group</p>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">{group.name}</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-tight">
+            {group.name}
+          </h1>
           <p className="mt-1 text-[#7c6f9c]">
-            {ready && !loadError ? `${members.length} members` : ready ? "Members unavailable" : "Loading members"} · You are {group.role === "owner" ? "the owner" : "a member"}
+            {ready && !loadError
+              ? `${members.length} members`
+              : ready
+                ? "Members unavailable"
+                : "Loading members"}{" "}
+            · You are {group.role === "owner" ? "the owner" : "a member"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-base">
-          <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">Weekly reset: Sunday</span>
+          <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">
+            Weekly reset: Sunday
+          </span>
           <span className="rounded-full border border-[#d9d0e6] bg-white/50 px-4 py-2">
             Your points: <strong>{myPoints}</strong>
           </span>
@@ -477,15 +629,12 @@ export default function ChoresPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold">Chore tracking</h2>
-              <Link
-                href={`${home}?panel=add`}
-                scroll={false}
-                className="rounded-lg bg-[#1c2750] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#2b3a6e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c2750]"
-              >
-                Add chore
-              </Link>
             </div>
-            <div role="tablist" aria-label="Filter chores" className="flex w-full rounded-xl bg-[#e9e3f1] p-1 sm:w-auto">
+            <div
+              role="tablist"
+              aria-label="Filter chores"
+              className="flex w-full rounded-xl bg-[#e9e3f1] p-1 sm:w-auto"
+            >
               {FILTERS.map((f) => (
                 <button
                   key={f}
@@ -493,7 +642,9 @@ export default function ChoresPage() {
                   aria-selected={filter === f}
                   onClick={() => setFilter(f)}
                   className={`flex-1 rounded-lg px-2 py-2.5 text-base font-medium transition-colors sm:flex-none sm:px-4 ${
-                    filter === f ? "bg-white shadow-sm" : "text-[#6b6590] hover:text-[#1c2750]"
+                    filter === f
+                      ? "bg-white shadow-sm"
+                      : "text-[#6b6590] hover:text-[#1c2750]"
                   }`}
                 >
                   {f}
@@ -523,17 +674,30 @@ export default function ChoresPage() {
                     >
                       {c.title}
                     </button>
-                    <span className="inline-grid h-8 min-w-10 shrink-0 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
+                    <span className="inline-grid h-8 min-w-10 shrink-0 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">
+                      {c.points}
+                    </span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-[#6b6590]">
-                    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}>
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
-                      {s.label}
+                    <span
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}
+                    >
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`}
+                      />
+                      {c.status === "completed"
+                        ? `Completed by ${assigneeName(c.assigneeId, members) ?? "Unknown"}`
+                        : s.label}
                     </span>
                     <span>Due {formatDue(c.due)}</span>
-                    <span>{assigneeName(c.assigneeId, members) ?? "Unassigned"}</span>
+                    <span>
+                      {assigneeName(c.assigneeId, members) ?? "Unassigned"}
+                    </span>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                  <div
+                    className="mt-3 flex flex-wrap items-center justify-end gap-2"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {choreActions(c)}
                   </div>
                 </li>
@@ -546,9 +710,16 @@ export default function ChoresPage() {
               <thead>
                 <tr className="border-b border-[#d5cde3] text-base text-[#6b6590]">
                   {["Chore", "Points", "Due", "Assignee", "Status"].map((h) => (
-                    <th key={h} className="whitespace-nowrap pb-3 pr-2 font-semibold">{h}</th>
+                    <th
+                      key={h}
+                      className="whitespace-nowrap pb-3 pr-2 font-semibold"
+                    >
+                      {h}
+                    </th>
                   ))}
-                  <th className="pb-3"><span className="sr-only">Actions</span></th>
+                  <th className="pb-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -570,19 +741,36 @@ export default function ChoresPage() {
                         </button>
                       </td>
                       <td className="whitespace-nowrap pr-2">
-                        <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">{c.points}</span>
+                        <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold">
+                          {c.points}
+                        </span>
                       </td>
-                      <td className="whitespace-nowrap pr-2 text-base">{formatDue(c.due)}</td>
-                      <td className="whitespace-nowrap pr-2 text-base">{assigneeName(c.assigneeId, members) ?? "—"}</td>
+                      <td className="whitespace-nowrap pr-2 text-base">
+                        {formatDue(c.due)}
+                      </td>
+                      <td className="whitespace-nowrap pr-2 text-base">
+                        {assigneeName(c.assigneeId, members) ?? "—"}
+                      </td>
                       <td className="whitespace-nowrap pr-2">
-                        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}>
-                          <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
-                          {s.label}
+                        <span
+                          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium leading-none ${s.pill}`}
+                        >
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`}
+                          />
+                          {c.status === "completed"
+                            ? `Completed by ${assigneeName(c.assigneeId, members) ?? "Unknown"}`
+                            : s.label}
                         </span>
                       </td>
                       {/* w-px keeps this column as narrow as its buttons, so both sit together on the right. */}
-                      <td className="w-px whitespace-nowrap pl-2" onClick={(event) => event.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">{choreActions(c)}</div>
+                      <td
+                        className="w-px whitespace-nowrap pl-2"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-2">
+                          {choreActions(c)}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -592,13 +780,17 @@ export default function ChoresPage() {
           </div>
           <div>
             {!ready && (
-              <p className="py-10 text-center text-[#6b6590]">Loading chores…</p>
+              <p className="py-10 text-center text-[#6b6590]">
+                Loading chores…
+              </p>
             )}
             {ready && loadError && (
               <p className="py-10 text-center text-[#b3402f]">{loadError}</p>
             )}
             {ready && !loadError && visible.length === 0 && (
-              <p className="py-10 text-center text-[#6b6590]">No chores match this filter. Try another tab.</p>
+              <p className="py-10 text-center text-[#6b6590]">
+                No chores match this filter. Try another tab.
+              </p>
             )}
           </div>
         </section>
@@ -607,21 +799,35 @@ export default function ChoresPage() {
           <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">Possible rewards</h2>
-              <Link href={householdPath(group.id, "/rewards")}className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]">
+              <Link
+                href={householdPath(group.id, "/rewards")}
+                className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]"
+              >
                 Manage
               </Link>
             </div>
             <ul className="mt-3 flex flex-col gap-2">
               {rewards.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-2 rounded-xl bg-[#ebe6f1] px-3 py-2">
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-2 rounded-xl bg-[#ebe6f1] px-3 py-2"
+                >
                   <div className="min-w-0">
-                    <p className="whitespace-nowrap text-sm font-semibold">{r.title}</p>
-                    <p className="text-sm text-[#6b6590]">{r.cost} pts · {r.scope}</p>
+                    <p className="whitespace-nowrap text-sm font-semibold">
+                      {r.title}
+                    </p>
+                    <p className="text-sm text-[#6b6590]">
+                      {r.cost} pts · {r.scope}
+                    </p>
                   </div>
                   <button
                     onClick={() => redeem(r)}
                     disabled={myPoints < r.cost}
-                    title={myPoints < r.cost ? `Need ${r.cost - myPoints} more points` : undefined}
+                    title={
+                      myPoints < r.cost
+                        ? `Need ${r.cost - myPoints} more points`
+                        : undefined
+                    }
                     className="shrink-0 rounded-lg bg-[#9a7fb0] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#8869a0] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Redeem
@@ -634,16 +840,29 @@ export default function ChoresPage() {
           <section className="rounded-3xl border border-white/70 bg-[#f4f0f8]/90 p-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">Points tracker</h2>
-              <Link href={householdPath(group.id, "/leaderboard")}className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]">
+              <Link
+                href={householdPath(group.id, "/leaderboard")}
+                className="text-sm font-semibold text-[#9a7fb0] hover:text-[#1c2750]"
+              >
                 Full board
               </Link>
             </div>
             <ol className="mt-3 flex flex-col gap-2">
               {weekBoard.map((member, index) => (
-                <li key={member.id} className="flex items-center gap-2.5 rounded-xl bg-[#ebe6f1] px-3 py-2">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">{index + 1}</span>
-                  <span className="min-w-0 flex-1 whitespace-nowrap text-sm font-semibold">{member.name}{member.id === CURRENT_USER.id && " (you)"}</span>
-                  <span className="shrink-0 text-sm font-semibold text-[#9a7fb0]">{member.points}</span>
+                <li
+                  key={member.id}
+                  className="flex items-center gap-2.5 rounded-xl bg-[#ebe6f1] px-3 py-2"
+                >
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1c2750] text-sm font-semibold text-white">
+                    {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 whitespace-normal break-words text-sm font-semibold">
+                    {member.name}
+                    {member.id === CURRENT_USER.id && " (you)"}
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-[#9a7fb0]">
+                    {member.points}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -651,12 +870,25 @@ export default function ChoresPage() {
         </div>
       </div>
 
-      {modalOpen && <ChoreModal heading="Add chore" submitLabel="Add chore" pending={pending} onClose={closeModal} onSubmit={addChore} />}
+      {modalOpen && (
+        <ChoreModal
+          heading="Add chore"
+          submitLabel="Add chore"
+          pending={pending}
+          onClose={closeModal}
+          onSubmit={addChore}
+        />
+      )}
       {editing && (
         <ChoreModal
           heading="Edit chore"
           submitLabel="Save"
-          initial={{ title: editing.title, detail: editing.detail, points: editing.points, due: editing.due }}
+          initial={{
+            title: editing.title,
+            detail: editing.detail,
+            points: editing.points,
+            due: editing.due,
+          }}
           pending={pending}
           onClose={closeEdit}
           onSubmit={saveEdit}
