@@ -5,6 +5,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  GetRewardHistoryParams,
+  HistoryResponse,
   ListRewardsParams,
   MemberPoints,
   RewardCreate,
@@ -157,6 +159,36 @@ export const redeemReward = async (rewardId: number, options?: RequestInit): Pro
   {      
     ...options,
     method: 'POST'
+    
+    
+  }
+);}
+
+
+/**
+ * @summary Get Reward History
+ */
+export const getGetRewardHistoryUrl = (params: GetRewardHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/rewards/history?${stringifiedParams}` : `/rewards/history`
+}
+
+export const getRewardHistory = async (params: GetRewardHistoryParams, options?: RequestInit): Promise<HistoryResponse[]> => {
+  
+  return apiFetch<HistoryResponse[]>(getGetRewardHistoryUrl(params),
+  {      
+    ...options,
+    method: 'GET'
     
     
   }

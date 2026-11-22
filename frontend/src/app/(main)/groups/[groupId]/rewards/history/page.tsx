@@ -4,26 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { CURRENT_USER, listMembers, type Member } from "@/lib/chores";
+import { getRewardHistory} from "@/lib/api/gen/rewards";
 import { householdPath } from "@/lib/session";
+import { HistoryResponse } from "@/lib/api/gen/schemas";
 
 const FILTERS = ["All", "Mine"] as const;
 type Filter = (typeof FILTERS)[number];
 
-export type ClaimedRewardItem = {
-  id: number;
-  rewardTitle: string;
-  cost: number;
-  claimedBy: number;
-  claimedByName: string;
-  claimedAt: string; // ISO date string (YYYY-MM-DD)
-};
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function formatDate(iso: string) {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!month || !day || month < 1 || month > 12) return iso;
-  return `${MONTHS[month - 1]} ${day}, ${year}`;
+function formatDate(iso: string)
+{
+  const date = new Date(iso);
+  return isNaN(date.getTime()) ? iso : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric"});
 }
 
 export default function RewardHistoryPage() {
@@ -33,7 +24,7 @@ export default function RewardHistoryPage() {
   const loaded = useRef(false);
 
   const [members, setMembers] = useState<Member[]>([]);
-  const [history, setHistory] = useState<ClaimedRewardItem[]>([]);
+  const [history, setHistory] = useState<HistoryResponse[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("All");
@@ -47,7 +38,10 @@ export default function RewardHistoryPage() {
         setLoadError(null);
         setMembers(nextMembers);
         // Reward history is empty until the backend tracking endpoint is connected
-        setHistory([]);
+        getRewardHistory({group_id: group.id})
+          .then((history) => {
+            setHistory(history);
+          })
       })
       .catch((error: unknown) => {
         if (cancelled || loaded.current) return;
@@ -69,7 +63,7 @@ export default function RewardHistoryPage() {
   const visible = useMemo(() => {
     return history.filter((item) => {
       if (filter === "Mine") {
-        return item.claimedBy === CURRENT_USER.id;
+        return item.redeemed_by === CURRENT_USER.id;
       }
       return true;
     });
@@ -127,14 +121,15 @@ export default function RewardHistoryPage() {
         {/* Responsive narrow view: full-width card per claimed reward */}
         <ul className="mt-5 flex flex-col @3xl:hidden">
           {visible.map((item) => {
-            const isMine = item.claimedBy === CURRENT_USER.id;
+            const isMine = item.redeemed_by === CURRENT_USER.id;
+            const redeemedUserName = members.find((member) => member.id === item.redeemed_by)?.name;
             return (
               <li
                 key={item.id}
                 className="border-b border-[#d5cde3] py-3.5 transition-colors last:border-0 hover:bg-white/50"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="min-w-0 break-words font-semibold text-[#1c2750]">{item.rewardTitle}</span>
+                  <span className="min-w-0 break-words font-semibold text-[#1c2750]">{item.name}</span>
                   <span className="inline-grid h-8 min-w-10 shrink-0 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold text-[#1c2750]">
                     {item.cost} pts
                   </span>
@@ -143,12 +138,12 @@ export default function RewardHistoryPage() {
                   <span>
                     Claimed by{" "}
                     <strong className="font-semibold text-[#1c2750]">
-                      {item.claimedByName}
+                      {redeemedUserName}
                       {isMine ? " (you)" : ""}
                     </strong>
                   </span>
                   <span>·</span>
-                  <span>{formatDate(item.claimedAt)}</span>
+                  <span>{formatDate(item.redeemed_at)}</span>
                 </div>
               </li>
             );
@@ -169,14 +164,15 @@ export default function RewardHistoryPage() {
             </thead>
             <tbody>
               {visible.map((item) => {
-                const isMine = item.claimedBy === CURRENT_USER.id;
+                const isMine = item.redeemed_by === CURRENT_USER.id;
+                const redeemedUserName = members.find((member) => member.id === item.redeemed_by)?.name;
                 return (
                   <tr
                     key={item.id}
                     className="border-b border-[#d5cde3] transition-colors last:border-0 hover:bg-white/50"
                   >
                     <td className="whitespace-nowrap py-3.5 pr-4">
-                      <span className="font-semibold text-[#1c2750]">{item.rewardTitle}</span>
+                      <span className="font-semibold text-[#1c2750]">{item.name}</span>
                     </td>
                     <td className="whitespace-nowrap pr-4">
                       <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold text-[#1c2750]">
@@ -184,11 +180,11 @@ export default function RewardHistoryPage() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap pr-4 text-base text-[#1c2750]">
-                      {item.claimedByName}
+                      {redeemedUserName}
                       {isMine && <span className="font-normal text-[#6b6590]"> (you)</span>}
                     </td>
                     <td className="whitespace-nowrap pr-4 text-base text-[#6b6590]">
-                      {formatDate(item.claimedAt)}
+                      {formatDate(item.redeemed_at)}
                     </td>
                   </tr>
                 );
