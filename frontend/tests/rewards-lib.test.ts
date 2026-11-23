@@ -25,22 +25,22 @@ describe("Reward client", () => {
 
   it("lists rewards and converts API responses", async () => {
     vi.mocked(api.listRewards).mockResolvedValue([
-      { id: 1, name: "Free coffee", cost: 30, type: "individual" },
-      { id: 2, name: "Pick dinner", cost: 25, type: "group" },
+      { id: 1, group_id: 7, created_by: 1, name: "Free coffee", cost: 30, type: "individual" },
+      { id: 2, group_id: 7, created_by: 1, name: "Pick dinner", cost: 25, type: "group" },
     ]);
 
     const result = await listRewards(7);
 
     expect(api.listRewards).toHaveBeenCalledWith({ group_id: 7 });
     expect(result).toEqual([
-      { id: 1, title: "Free coffee", cost: 30, scope: "Personal" },
-      { id: 2, title: "Pick dinner", cost: 25, scope: "Group" },
+      { id: 1, title: "Free coffee", cost: 30, scope: "Personal", createdBy: 1 },
+      { id: 2, title: "Pick dinner", cost: 25, scope: "Group", createdBy: 1 },
     ]);
   });
 
   it("creates a personal reward", async () => {
     vi.mocked(api.createReward).mockResolvedValue({
-      id: 3, name: "Ice cream", cost: 20, type: "individual",
+      id: 3, group_id: 7, created_by: 1, name: "Ice cream", cost: 20, type: "individual",
     });
 
     const result = await createReward(7, {
@@ -58,7 +58,7 @@ describe("Reward client", () => {
 
   it("trims the reward title before creating", async () => {
     vi.mocked(api.createReward).mockResolvedValue({
-      id: 3, name: "Ice cream", cost: 20, type: "individual",
+      id: 3, group_id: 7, created_by: 1, name: "Ice cream", cost: 20, type: "individual",
     });
 
     await createReward(7, {
@@ -75,7 +75,7 @@ describe("Reward client", () => {
 
   it("updates a group reward", async () => {
     vi.mocked(api.updateReward).mockResolvedValue({
-      id: 2, name: "Movie night", cost: 40, type: "group",
+      id: 2, group_id: 7, created_by: 1, name: "Movie night", cost: 40, type: "group",
     });
 
     const result = await updateReward(7, 2, {
