@@ -4,26 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useGroup, useNotify, useRefreshTick } from "@/components/app-shell";
 import { CURRENT_USER, listMembers, type Member } from "@/lib/chores";
+import { apiFetch } from "@/lib/api/fetch";
 import { householdPath } from "@/lib/session";
 
 const FILTERS = ["All", "Mine"] as const;
 type Filter = (typeof FILTERS)[number];
 
-export type ClaimedRewardItem = {
+export interface HistoryResponse {
   id: number;
-  rewardTitle: string;
+  name: string;
   cost: number;
-  claimedBy: number;
-  claimedByName: string;
-  claimedAt: string; // ISO date string (YYYY-MM-DD)
-};
+  redeemed_by: number;
+  redeemed_at: string;
+}
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export type ClaimedRewardItem = HistoryResponse;
 
 function formatDate(iso: string) {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!month || !day || month < 1 || month > 12) return iso;
-  return `${MONTHS[month - 1]} ${day}, ${year}`;
+  const date = new Date(iso);
+  return isNaN(date.getTime())
+    ? iso
+    : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function RewardHistoryPage() {
@@ -33,25 +34,28 @@ export default function RewardHistoryPage() {
   const loaded = useRef(false);
 
   const [members, setMembers] = useState<Member[]>([]);
-  const [history, setHistory] = useState<ClaimedRewardItem[]>([]);
+  const [history, setHistory] = useState<HistoryResponse[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("All");
 
   useEffect(() => {
     let cancelled = false;
-    listMembers(group.id)
-      .then((nextMembers) => {
+
+    Promise.all([
+      listMembers(group.id),
+      apiFetch<HistoryResponse[]>(`/rewards/history?group_id=${group.id}`, { method: "GET" }),
+    ])
+      .then(([nextMembers, nextHistory]) => {
         if (cancelled) return;
         loaded.current = true;
         setLoadError(null);
         setMembers(nextMembers);
-        // Reward history is empty until the backend tracking endpoint is connected
-        setHistory([]);
+        setHistory(Array.isArray(nextHistory) ? nextHistory : []);
       })
       .catch((error: unknown) => {
         if (cancelled || loaded.current) return;
-        const message = error instanceof Error ? error.message : "Could not load members";
+        const message = error instanceof Error ? error.message : "Could not load reward history";
         setLoadError(message);
         notify(message);
       })
@@ -69,7 +73,7 @@ export default function RewardHistoryPage() {
   const visible = useMemo(() => {
     return history.filter((item) => {
       if (filter === "Mine") {
-        return item.claimedBy === CURRENT_USER.id;
+        return item.redeemed_by === CURRENT_USER.id;
       }
       return true;
     });
@@ -127,14 +131,16 @@ export default function RewardHistoryPage() {
         {/* Responsive narrow view: full-width card per claimed reward */}
         <ul className="mt-5 flex flex-col @3xl:hidden">
           {visible.map((item) => {
-            const isMine = item.claimedBy === CURRENT_USER.id;
+            const isMine = item.redeemed_by === CURRENT_USER.id;
+            const member = members.find((m) => m.id === item.redeemed_by);
+            const claimedByName = member?.name ?? (isMine ? CURRENT_USER.name : `Member #${item.redeemed_by}`);
             return (
               <li
                 key={item.id}
                 className="border-b border-[#d5cde3] py-3.5 transition-colors last:border-0 hover:bg-white/50"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="min-w-0 break-words font-semibold text-[#1c2750]">{item.rewardTitle}</span>
+                  <span className="min-w-0 break-words font-semibold text-[#1c2750]">{item.name}</span>
                   <span className="inline-grid h-8 min-w-10 shrink-0 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold text-[#1c2750]">
                     {item.cost} pts
                   </span>
@@ -143,12 +149,12 @@ export default function RewardHistoryPage() {
                   <span>
                     Claimed by{" "}
                     <strong className="font-semibold text-[#1c2750]">
-                      {item.claimedByName}
+                      {claimedByName}
                       {isMine ? " (you)" : ""}
                     </strong>
                   </span>
                   <span>·</span>
-                  <span>{formatDate(item.claimedAt)}</span>
+                  <span>{formatDate(item.redeemed_at)}</span>
                 </div>
               </li>
             );
@@ -169,14 +175,16 @@ export default function RewardHistoryPage() {
             </thead>
             <tbody>
               {visible.map((item) => {
-                const isMine = item.claimedBy === CURRENT_USER.id;
+                const isMine = item.redeemed_by === CURRENT_USER.id;
+                const member = members.find((m) => m.id === item.redeemed_by);
+                const claimedByName = member?.name ?? (isMine ? CURRENT_USER.name : `Member #${item.redeemed_by}`);
                 return (
                   <tr
                     key={item.id}
                     className="border-b border-[#d5cde3] transition-colors last:border-0 hover:bg-white/50"
                   >
                     <td className="whitespace-nowrap py-3.5 pr-4">
-                      <span className="font-semibold text-[#1c2750]">{item.rewardTitle}</span>
+                      <span className="font-semibold text-[#1c2750]">{item.name}</span>
                     </td>
                     <td className="whitespace-nowrap pr-4">
                       <span className="inline-grid h-8 min-w-10 place-items-center rounded-full bg-[#e5deee] px-2 text-sm font-semibold text-[#1c2750]">
@@ -184,11 +192,11 @@ export default function RewardHistoryPage() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap pr-4 text-base text-[#1c2750]">
-                      {item.claimedByName}
+                      {claimedByName}
                       {isMine && <span className="font-normal text-[#6b6590]"> (you)</span>}
                     </td>
                     <td className="whitespace-nowrap pr-4 text-base text-[#6b6590]">
-                      {formatDate(item.claimedAt)}
+                      {formatDate(item.redeemed_at)}
                     </td>
                   </tr>
                 );
